@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+supabase
+python-dotenv
+bcrypt
+python-jose[cryptography]
+resend
+pydantic[email]
+pydantic-settings
