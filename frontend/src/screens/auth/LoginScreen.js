@@ -93,7 +93,7 @@ export const LoginScreen = ({ navigation }) => {
           {/* Bottom Security Footer */}
           <View style={styles.securityFooter}>
             <Text style={styles.securityFooterText}>
-              🔒 256-Bit SSL Encrypted • Ecobank Pan-African Network Partner
+              256-Bit SSL Encrypted • Ecobank Pan-African Network Partner
             </Text>
           </View>
         </View>

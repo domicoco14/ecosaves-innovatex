@@ -6,32 +6,91 @@ import { InputField } from '../../components/InputField';
 import { Button } from '../../components/Button';
 import { useAuthStore } from '../../store/authStore';
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export const SignupScreen = ({ navigation }) => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [validationError, setValidationError] = useState('');
+  const [invalidField, setInvalidField] = useState(null); // 'firstName' | 'lastName' | 'email' | null
 
   const signup = useAuthStore((state) => state.signup);
   const isLoading = useAuthStore((state) => state.isLoading);
-  const error = useAuthStore((state) => state.error);
+  const backendError = useAuthStore((state) => state.error);
+  const clearError = useAuthStore((state) => state.clearError);
+
+  const handleFirstNameChange = (text) => {
+    setFirstName(text);
+    if (validationError) {
+      setValidationError('');
+      setInvalidField(null);
+    }
+  };
+
+  const handleLastNameChange = (text) => {
+    setLastName(text);
+    if (validationError) {
+      setValidationError('');
+      setInvalidField(null);
+    }
+  };
+
+  const handleEmailChange = (text) => {
+    setEmail(text);
+    if (validationError) {
+      setValidationError('');
+      setInvalidField(null);
+    }
+  };
 
   const handleNext = async () => {
-    const fn = firstName.trim() || 'John';
-    const ln = lastName.trim() || 'Doe';
-    const em = email.trim() || 'johndoe@gmail.com';
+    if (!firstName.trim()) {
+      setValidationError('Please enter your first name.');
+      setInvalidField('firstName');
+      return;
+    }
+    if (!lastName.trim()) {
+      setValidationError('Please enter your last name.');
+      setInvalidField('lastName');
+      return;
+    }
+    if (!email.trim()) {
+      setValidationError('Please enter your email address.');
+      setInvalidField('email');
+      return;
+    }
+    if (!EMAIL_REGEX.test(email.trim())) {
+      setValidationError('Please enter a valid email address.');
+      setInvalidField('email');
+      return;
+    }
+
+    setValidationError('');
+    setInvalidField(null);
+    clearError();
+
+    const fn = firstName.trim();
+    const ln = lastName.trim();
+    const em = email.trim();
 
     try {
       await signup(fn, ln, em);
+      // Only advance once the backend has actually confirmed the signup.
+      navigation.navigate('VerifyEmail', {
+        email: em,
+        firstName: fn,
+        lastName: ln,
+      });
     } catch (err) {
-      console.log('Using mock flow for local testing');
+      // signup() already set `backendError` in the store from the backend's
+      // response (err.response.data.detail) — e.g. "email already registered".
+      // Stay on this screen so the user sees it instead of moving on.
     }
-
-    navigation.navigate('VerifyEmail', {
-      email: em,
-      firstName: fn,
-      lastName: ln,
-    });
   };
+
+  // A single message: local validation takes priority over a stale backend error.
+  const displayedError = validationError || backendError;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -48,14 +107,16 @@ export const SignupScreen = ({ navigation }) => {
               label="First name"
               placeholder="John"
               value={firstName}
-              onChangeText={setFirstName}
+              onChangeText={handleFirstNameChange}
+              inputStyle={invalidField === 'firstName' ? styles.inputError : null}
             />
 
             <InputField
               label="Last name"
               placeholder="Doe"
               value={lastName}
-              onChangeText={setLastName}
+              onChangeText={handleLastNameChange}
+              inputStyle={invalidField === 'lastName' ? styles.inputError : null}
             />
 
             <InputField
@@ -64,11 +125,16 @@ export const SignupScreen = ({ navigation }) => {
               keyboardType="email-address"
               autoCapitalize="none"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={handleEmailChange}
+              inputStyle={invalidField === 'email' ? styles.inputError : null}
             />
           </View>
 
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {displayedError ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{displayedError}</Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.footer}>
@@ -121,6 +187,21 @@ const styles = StyleSheet.create({
   form: {
     marginTop: 4,
   },
+  inputError: {
+    borderColor: '#E05252',
+    borderWidth: 1.5,
+  },
+  errorBox: {
+    backgroundColor: '#FEE9E9',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 8,
+  },
+  errorText: {
+    fontSize: 13,
+    color: '#C0392B',
+  },
   footer: {
     marginTop: 20,
     width: '100%',
@@ -146,11 +227,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#005B7F',
     fontWeight: '700',
-  },
-  errorText: {
-    color: '#D32F2F',
-    fontSize: 13,
-    marginTop: 4,
-    textAlign: 'center',
   },
 });

@@ -52,6 +52,22 @@ export const useAuthStore = create(
       },
 
       /**
+       * Resend OTP action — calls FastAPI POST /users/resend-otp
+      */
+      resendOtp: async (email) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await api.post('/users/resend-otp', { email });
+          set({ isLoading: false });
+          return response.data; // { message }
+        } catch (err) {
+          const message = err.response?.data?.detail || 'Failed to resend code';
+          set({ isLoading: false, error: message });
+          throw new Error(message);
+        }
+      },
+
+      /**
        * Set Password action — calls FastAPI POST /users/set-password
        */
       setPassword: async (email, password) => {

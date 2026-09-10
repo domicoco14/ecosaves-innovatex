@@ -21,6 +21,13 @@ class VerifyOtpResponse(BaseModel):
     message: str
     verified: bool
 
+class ResendOtpRequest(BaseModel):
+    email: EmailStr
+
+
+class ResendOtpResponse(BaseModel):
+    message: str
+
 
 class SetPasswordRequest(BaseModel):
     email: EmailStr

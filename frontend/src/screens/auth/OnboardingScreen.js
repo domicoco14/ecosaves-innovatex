@@ -5,171 +5,136 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
-  Image,
-  ScrollView,
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EcoSavesLogo } from '../../components/EcoSavesLogo';
 
-const { width, height } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 
 export const OnboardingScreen = ({ navigation }) => {
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#041021" />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#00587E" />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        bounces={false}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* 1. EcoSaves Branding Header */}
-        <View style={styles.brandHeader}>
-          <EcoSavesLogo variant="hero" />
-        </View>
+      {/* Top hero panel */}
+      <View style={styles.heroPanel}>
+        <SafeAreaView style={styles.heroSafeArea}>
+          <EcoSavesLogo variant="hero" size={148} />
+        </SafeAreaView>
+      </View>
 
-        {/* 2. Hero Visual Focal Point */}
-        {/* <View style={styles.heroWrapper}>
-          <Image
-            source={require('../../../assets/onboarding_hero.png')}
-            style={styles.heroImage}
-            resizeMode="contain"
-          />
-        </View> */}
-
-        {/* 3. Value Proposition Section */}
-        <View style={styles.valueSection}>
-          <Text style={styles.headline}>Save together with Zero Wahala</Text>
-          <Text style={styles.subheadline}>
-            Join trusted circles in Nigeria, Ghana, Kenya and across Africa seamlessly.
-          </Text>
-        </View>
-
-        {/* 4. Action Buttons & Trust Footer */}
-        <View style={styles.actionContainer}>
-          <TouchableOpacity
-            style={styles.primaryBtn}
-            activeOpacity={0.88}
-            onPress={() => navigation.navigate('Signup')}
-          >
-            <Text style={styles.primaryBtnText}>Create Account</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.secondaryBtn}
-            activeOpacity={0.88}
-            onPress={() => navigation.navigate('Login')}
-          >
-            <Text style={styles.secondaryBtnText}>Log In</Text>
-          </TouchableOpacity>
-
-          <View style={styles.trustFooter}>
-            <Text style={styles.trustFooterText}>
-              {/* 🔒 Ecobank Pan-African Partner • Licensed & Insured */}
-              Ecobank Pan-African Partner • Licensed & Insured
+      {/* Bottom content panel */}
+      <SafeAreaView style={styles.contentPanel} edges={['bottom']}>
+        <View style={styles.contentInner}>
+          <View style={styles.textSection}>
+            <Text style={styles.headline}>
+              Save together,{'\n'}the digitized ajo way
+            </Text>
+            <Text style={styles.subheadline}>
+              Join an ajo/esusu group, contribute automatically via Ecobank
+              Blaze, and get paid out on your turn. No cash, no wahala.
             </Text>
           </View>
+
+          <View style={styles.actionSection}>
+            <TouchableOpacity
+              style={styles.primaryBtn}
+              activeOpacity={0.88}
+              onPress={() => navigation.navigate('Signup')}
+            >
+              <Text style={styles.primaryBtnText}>Get Started</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate('Login')}
+              style={styles.loginLinkWrapper}
+            >
+              <Text style={styles.loginLinkText}>I already have an account</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
-    backgroundColor: '#041021',
+    backgroundColor: '#F7F9FA',
   },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 24,
+  heroPanel: {
+    height: height * 0.52,
+    backgroundColor: '#00587E',
   },
-  brandHeader: {
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  heroWrapper: {
-    width: '100%',
-    height: Math.min(height * 0.42, 340),
+  heroSafeArea: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 8,
   },
-  heroImage: {
-    width: '100%',
-    height: '100%',
+  contentPanel: {
+    flex: 1,
+    backgroundColor: '#F7F9FA',
   },
-  valueSection: {
-    alignItems: 'center',
-    marginVertical: 16,
-    paddingHorizontal: 8,
+  contentInner: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 20,
+  },
+  textSection: {
+    alignItems: 'flex-start',
   },
   headline: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    lineHeight: 36,
-    letterSpacing: -0.4,
-    marginBottom: 10,
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#0F1A22',
+    lineHeight: 33,
+    letterSpacing: -0.3,
+    marginBottom: 14,
+    textAlign: 'left',
   },
   subheadline: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#94A3B8',
-    textAlign: 'center',
-    lineHeight: 22,
-    maxWidth: 320,
+    fontWeight: '400',
+    color: '#7C8A94',
+    lineHeight: 21,
+    textAlign: 'left',
   },
-  actionContainer: {
+  actionSection: {
     width: '100%',
-    marginTop: 8,
   },
   primaryBtn: {
-    backgroundColor: '#FFCC00', // Warm African Fintech Gold
-    borderRadius: 16,
-    height: 54,
+    width: '100%',
+    backgroundColor: '#00587E',
+    borderRadius: 15,
+    height: 56,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
-    shadowColor: '#FFCC00',
+    marginBottom: 16,
+    shadowColor: '#00587E',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 3,
   },
   primaryBtnText: {
-    color: '#030C1E',
-    fontWeight: '900',
+    color: '#FFFFFF',
+    fontWeight: '700',
     fontSize: 16,
     letterSpacing: 0.2,
   },
-  secondaryBtn: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.18)',
-    borderRadius: 16,
-    height: 54,
+  loginLinkWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    paddingVertical: 4,
   },
-  secondaryBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: 16,
-  },
-  trustFooter: {
-    alignItems: 'center',
-  },
-  trustFooterText: {
-    color: '#64748B',
-    fontSize: 11,
-    fontWeight: '600',
-    textAlign: 'center',
+  loginLinkText: {
+    color: '#00587E',
+    fontWeight: '700',
+    fontSize: 14,
   },
 });

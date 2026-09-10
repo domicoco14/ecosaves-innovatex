@@ -9,22 +9,63 @@ import { useAuthStore } from '../../store/authStore';
 export const VerifyEmailScreen = ({ route, navigation }) => {
   const email = route.params?.email || 'johndoe@gmail.com';
   const [code, setCode] = useState('');
+  const [validationError, setValidationError] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendMessage, setResendMessage] = useState('');
 
   const verifyOtp = useAuthStore((state) => state.verifyOtp);
+  const resendOtp = useAuthStore((state) => state.resendOtp);
   const isLoading = useAuthStore((state) => state.isLoading);
-  const error = useAuthStore((state) => state.error);
+  const backendError = useAuthStore((state) => state.error);
+  const clearError = useAuthStore((state) => state.clearError);
+
+  React.useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
+
+  const handleCodeChange = (val) => {
+    setCode(val);
+    if (validationError) {
+      setValidationError('');
+    }
+  };
+
+  const handleResend = async () => {
+    if (resendCooldown > 0) return;
+
+    setResendMessage('');
+    clearError();
+
+    try {
+      const result = await resendOtp(email);
+      setResendMessage(result.message || 'A new code has been sent');
+      setResendCooldown(30); // 30s before they can tap resend again
+    } catch (err) {
+      // error already set in the store, displayedError below picks it up
+    }
+  };
 
   const handleVerify = async () => {
+    if (code.length < 4) {
+      setValidationError('Please enter the full 4-digit code.');
+      return;
+    }
+
+    setValidationError('');
+    clearError();
+
     try {
-      if (code) {
-        await verifyOtp(email, code);
-      }
+      await verifyOtp(email, code);
     } catch (err) {
       console.log('Using mock flow for UI testing');
     }
 
     navigation.navigate('CreatePassword', { email });
   };
+
+  const displayedError = validationError || backendError;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -42,15 +83,19 @@ export const VerifyEmailScreen = ({ route, navigation }) => {
           <OTPInput
             length={4}
             value={code}
-            onChange={setCode}
+            onChange={handleCodeChange}
             onComplete={(val) => setCode(val)}
+            error={Boolean(validationError)}
           />
 
-          <TouchableOpacity style={styles.resendWrapper}>
-            <Text style={styles.resendText}>Resend code</Text>
+          <TouchableOpacity style={styles.resendWrapper} onPress={handleResend} disabled={resendCooldown > 0}>
+            <Text style={[styles.resendText, resendCooldown > 0 && styles.resendTextDisabled]}>
+              {resendCooldown > 0 ? `Resend code (${resendCooldown}s)` : 'Resend code'}
+            </Text>
           </TouchableOpacity>
 
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {resendMessage ? <Text style={styles.resendMessage}>{resendMessage}</Text> : null}
+          {displayedError ? <Text style={styles.errorText}>{displayedError}</Text> : null}
         </View>
 
         <View style={styles.footer}>
@@ -118,6 +163,16 @@ const styles = StyleSheet.create({
     height: 52,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+    resendTextDisabled: {
+    color: '#9AA0A6',
+  },
+  resendMessage: {
+    color: '#2E7D32',
+    fontSize: 13,
+    marginTop: -12,
+    marginBottom: 12,
+    textAlign: 'right',
   },
   errorText: {
     color: '#D32F2F',

@@ -7,6 +7,7 @@ from app.schemas.auth import (
     SetPasswordRequest, LoginRequest, TokenResponse,
     ConnectBlazeRequest, CreateBlazeAccountRequest,
     DeleteAccountRequest, DeleteAccountResponse,
+    ResendOtpRequest, ResendOtpResponse,
 )
 from app.db.supabase_client import get_supabase
 from app.core.security import hash_password, verify_password, create_access_token, get_current_user_id
@@ -50,6 +51,22 @@ def verify_otp_route(payload: VerifyOtpRequest):
 
     return VerifyOtpResponse(message="Email verified", verified=True)
 
+@router.post("/resend-otp", response_model=ResendOtpResponse)
+def resend_otp(payload: ResendOtpRequest):
+    supabase = get_supabase()
+
+    user = supabase.table("users").select("id, email_verified").eq("email", payload.email).is_("deleted_at", "null").execute()
+    if not user.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.data[0]["email_verified"]:
+        raise HTTPException(status_code=400, detail="Email already verified")
+
+    try:
+        create_and_send_otp(payload.email)
+    except OtpRateLimitExceeded as e:
+        raise HTTPException(status_code=429, detail=str(e))
+
+    return ResendOtpResponse(message="A new OTP has been sent to your email")
 
 @router.post("/set-password", status_code=status.HTTP_200_OK)
 def set_password(payload: SetPasswordRequest):

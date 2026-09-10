@@ -10,23 +10,62 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
   const email = route.params?.email || 'johndoe@gmail.com';
   const [password, setPasswordState] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [validationError, setValidationError] = useState('');
+  const [invalidField, setInvalidField] = useState(null); // 'password' | 'confirmPassword' | null
 
   const setPassword = useAuthStore((state) => state.setPassword);
-  const loginApi = useAuthStore((state) => state.loginApi);
-  const loginMock = useAuthStore((state) => state.login);
   const isLoading = useAuthStore((state) => state.isLoading);
-  const error = useAuthStore((state) => state.error);
+  const backendError = useAuthStore((state) => state.error);
+  const clearError = useAuthStore((state) => state.clearError);
+
+  const handlePasswordChange = (text) => {
+    setPasswordState(text);
+    if (validationError) {
+      setValidationError('');
+      setInvalidField(null);
+    }
+  };
+
+  const handleConfirmPasswordChange = (text) => {
+    setConfirmPassword(text);
+    if (validationError) {
+      setValidationError('');
+      setInvalidField(null);
+    }
+  };
 
   const handleFinish = async () => {
+    if (!password.trim()) {
+      setValidationError('Please enter a password.');
+      setInvalidField('password');
+      return;
+    }
+    if (password.trim().length < 8) {
+      setValidationError('Password must be at least 8 characters.');
+      setInvalidField('password');
+      return;
+    }
+    if (!confirmPassword.trim()) {
+      setValidationError('Please re-enter your password.');
+      setInvalidField('confirmPassword');
+      return;
+    }
+    if (password.trim() !== confirmPassword.trim()) {
+      setValidationError('Passwords do not match.');
+      setInvalidField('confirmPassword');
+      return;
+    }
+
+    setValidationError('');
+    setInvalidField(null);
+    clearError();
+
     try {
-      if (password) {
-        await setPassword(email, password);
-      }
+      await setPassword(email, password.trim());
     } catch (err) {
       console.log('Using mock auth for local testing');
     }
 
-    // Save pending user profile and navigate to ConnectBlaze
     useAuthStore.getState().updateUser({
       name: 'Dominion Akinsola',
       email,
@@ -35,6 +74,8 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
     });
     navigation.navigate('ConnectBlaze');
   };
+
+  const displayedError = validationError || backendError;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -52,7 +93,8 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
               placeholder="XXXXXXXX"
               secureTextEntry
               value={password}
-              onChangeText={setPasswordState}
+              onChangeText={handlePasswordChange}
+              inputStyle={invalidField === 'password' ? styles.inputError : null}
             />
 
             <InputField
@@ -60,11 +102,12 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
               placeholder="XXXXXXXX"
               secureTextEntry
               value={confirmPassword}
-              onChangeText={setConfirmPassword}
+              onChangeText={handleConfirmPasswordChange}
+              inputStyle={invalidField === 'confirmPassword' ? styles.inputError : null}
             />
           </View>
 
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {displayedError ? <Text style={styles.errorText}>{displayedError}</Text> : null}
         </View>
 
         <View style={styles.footer}>
@@ -120,6 +163,9 @@ const styles = StyleSheet.create({
     height: 52,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  inputError: {
+    borderColor: '#D32F2F',
   },
   errorText: {
     color: '#D32F2F',
