@@ -3,7 +3,10 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { MainTabs } from './MainTabs';
 import { GroupDetailScreen } from '../screens/app/GroupDetailScreen';
 import { ContributionHistoryScreen } from '../screens/app/ContributionHistoryScreen';
+import { GroupChatScreen } from '../screens/app/GroupChatScreen';
 import { CreateGroupStack } from './CreateGroupStack';
+import { ConnectBlazeScreen } from '../screens/auth/ConnectBlazeScreen';
+import { CreateBlazeAccountScreen } from '../screens/auth/CreateBlazeAccountScreen';
 
 const Stack = createStackNavigator();
 
@@ -27,6 +30,11 @@ export const AppStack = () => {
         options={{ title: 'Group Details' }}
       />
       <Stack.Screen
+        name="GroupChat"
+        component={GroupChatScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
         name="ContributionHistory"
         component={ContributionHistoryScreen}
         options={{ title: 'Contribution History' }}
@@ -35,6 +43,16 @@ export const AppStack = () => {
         name="CreateGroupStack"
         component={CreateGroupStack}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ConnectBlaze"
+        component={ConnectBlazeScreen}
+        options={{ title: 'Link Blaze Account' }}
+      />
+      <Stack.Screen
+        name="CreateBlazeAccount"
+        component={CreateBlazeAccountScreen}
+        options={{ title: 'Create Blaze Account' }}
       />
     </Stack.Navigator>
   );

@@ -23,8 +23,7 @@ export const MainTabs = () => {
   return (
     <Tab.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: '#F6F9F9', elevation: 0, shadowOpacity: 0 },
-        headerTitleStyle: { fontWeight: '700', color: '#161C20' },
+        headerShown: false,
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopWidth: 0,

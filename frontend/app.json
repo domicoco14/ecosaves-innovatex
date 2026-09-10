@@ -1,5 +1,30 @@
 {
-  "plugins": [
-    "expo-secure-store"
-  ]
+  "expo": {
+    "name": "EcoSaves",
+    "slug": "ecosaves-innovatex",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#005B7F"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#005B7F"
+      },
+      "package": "com.domicoco.ecosavesinnovatex"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "b5d68ca1-caa9-4486-b5c4-b4b8a8da6e6e"
+      }
+    }
+  }
 }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 export const InputField = ({
   label,
@@ -8,33 +9,55 @@ export const InputField = ({
   placeholder,
   secureTextEntry,
   keyboardType = 'default',
+  autoCapitalize = 'sentences',
   error,
   style,
   inputStyle,
   ...props
 }) => {
   const [isFocused, setIsFocused] = useState(false);
+  const [isPasswordHidden, setIsPasswordHidden] = useState(Boolean(secureTextEntry));
+
+  const isPassword = Boolean(secureTextEntry);
 
   return (
     <View style={[styles.container, style]}>
       {label && <Text style={styles.label}>{label}</Text>}
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor="#9EA5AD"
-        secureTextEntry={secureTextEntry}
-        keyboardType={keyboardType}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
-        style={[
-          styles.input,
-          isFocused && styles.focusedInput,
-          error && styles.errorInput,
-          inputStyle,
-        ]}
-        {...props}
-      />
+      <View style={styles.inputWrapper}>
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor="#9EA5AD"
+          secureTextEntry={isPassword ? isPasswordHidden : false}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          style={[
+            styles.input,
+            isPassword && styles.inputWithEye,
+            isFocused && styles.focusedInput,
+            error && styles.errorInput,
+            inputStyle,
+          ]}
+          {...props}
+        />
+        {isPassword && (
+          <TouchableOpacity
+            style={styles.eyeBtn}
+            onPress={() => setIsPasswordHidden((prev) => !prev)}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons
+              name={isPasswordHidden ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color={isPasswordHidden ? '#737980' : '#005B7F'}
+            />
+          </TouchableOpacity>
+        )}
+      </View>
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
@@ -42,27 +65,43 @@ export const InputField = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 8,
+    marginBottom: 16,
     width: '100%',
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
     color: '#161C20',
-    marginBottom: 6,
+    marginBottom: 8,
+  },
+  inputWrapper: {
+    position: 'relative',
+    width: '100%',
+    justifyContent: 'center',
   },
   input: {
-    backgroundColor: '#F0F2F5',
+    backgroundColor: '#F4F6F8',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    height: 52,
     fontSize: 15,
     color: '#161C20',
-    borderWidth: 1.5,
-    borderColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#E5E8EB',
+  },
+  inputWithEye: {
+    paddingRight: 48,
+  },
+  eyeBtn: {
+    position: 'absolute',
+    right: 14,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   focusedInput: {
-    borderColor: '#00597C', // Deep teal border on focus
+    borderColor: '#005B7F',
     backgroundColor: '#FFFFFF',
   },
   errorInput: {

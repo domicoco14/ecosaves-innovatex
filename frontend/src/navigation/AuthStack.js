@@ -5,6 +5,8 @@ import { SignupScreen } from '../screens/auth/SignupScreen';
 import { VerifyEmailScreen } from '../screens/auth/VerifyEmailScreen';
 import { CreatePasswordScreen } from '../screens/auth/CreatePasswordScreen';
 import { LoginScreen } from '../screens/auth/LoginScreen';
+import { ConnectBlazeScreen } from '../screens/auth/ConnectBlazeScreen';
+import { CreateBlazeAccountScreen } from '../screens/auth/CreateBlazeAccountScreen';
 
 const Stack = createStackNavigator();
 
@@ -42,6 +44,16 @@ export const AuthStack = () => {
         name="Login"
         component={LoginScreen}
         options={{ title: 'Login' }}
+      />
+      <Stack.Screen
+        name="ConnectBlaze"
+        component={ConnectBlazeScreen}
+        options={{ title: 'Link Blaze Account' }}
+      />
+      <Stack.Screen
+        name="CreateBlazeAccount"
+        component={CreateBlazeAccountScreen}
+        options={{ title: 'Create Blaze Account' }}
       />
     </Stack.Navigator>
   );
