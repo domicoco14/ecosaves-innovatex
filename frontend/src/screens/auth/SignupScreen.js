@@ -15,7 +15,7 @@ export const SignupScreen = ({ navigation }) => {
   const [validationError, setValidationError] = useState('');
   const [invalidField, setInvalidField] = useState(null); // 'firstName' | 'lastName' | 'email' | null
 
-  const signup = useAuthStore((state) => state.signup);
+  const requestOtp = useAuthStore((state) => state.requestOtp);
   const isLoading = useAuthStore((state) => state.isLoading);
   const backendError = useAuthStore((state) => state.error);
   const clearError = useAuthStore((state) => state.clearError);
@@ -75,15 +75,15 @@ export const SignupScreen = ({ navigation }) => {
     const em = email.trim();
 
     try {
-      await signup(fn, ln, em);
-      // Only advance once the backend has actually confirmed the signup.
+      await requestOtp(em);
+      // Only advance once the backend has actually sent the OTP.
       navigation.navigate('VerifyEmail', {
         email: em,
         firstName: fn,
         lastName: ln,
       });
     } catch (err) {
-      // signup() already set `backendError` in the store from the backend's
+      // requestOtp() already set `backendError` in the store from the backend's
       // response (err.response.data.detail) — e.g. "email already registered".
       // Stay on this screen so the user sees it instead of moving on.
     }

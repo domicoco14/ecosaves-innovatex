@@ -11,41 +11,20 @@ export const useAuthStore = create(
       isAuthenticated: false,
       isLoading: false,
       error: null,
+      verificationToken: null, // holds the short-lived token between verify-otp and complete-signup
 
       /**
-       * Signup user action — calls FastAPI POST /users/signup
+       * Request OTP action — calls FastAPI POST /users/request-otp
+       * Only sends an email, no user record is created yet.
        */
-      signup: async (firstName, lastName, email) => {
+      requestOtp: async (email) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await api.post('/users/signup', {
-            first_name: firstName,
-            last_name: lastName,
-            email,
-          });
+          const response = await api.post('/users/request-otp', { email });
           set({ isLoading: false });
-          return response.data; // { message, user_id }
+          return response.data; // { message }
         } catch (err) {
-          const message = err.response?.data?.detail || 'Failed to sign up';
-          set({ isLoading: false, error: message });
-          throw new Error(message);
-        }
-      },
-
-      /**
-       * Verify OTP action — calls FastAPI POST /users/verify-otp
-       */
-      verifyOtp: async (email, otpCode) => {
-        set({ isLoading: true, error: null });
-        try {
-          const response = await api.post('/users/verify-otp', {
-            email,
-            otp_code: otpCode,
-          });
-          set({ isLoading: false });
-          return response.data; // { message, verified }
-        } catch (err) {
-          const message = err.response?.data?.detail || 'Invalid or expired OTP';
+          const message = err.response?.data?.detail || 'Failed to send code';
           set({ isLoading: false, error: message });
           throw new Error(message);
         }
@@ -53,7 +32,7 @@ export const useAuthStore = create(
 
       /**
        * Resend OTP action — calls FastAPI POST /users/resend-otp
-      */
+       */
       resendOtp: async (email) => {
         set({ isLoading: true, error: null });
         try {
@@ -68,19 +47,72 @@ export const useAuthStore = create(
       },
 
       /**
-       * Set Password action — calls FastAPI POST /users/set-password
+       * Verify OTP action — calls FastAPI POST /users/verify-otp
+       * Stores the returned verification_token for the final signup step.
        */
-      setPassword: async (email, password) => {
+      verifyOtp: async (email, otpCode) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await api.post('/users/set-password', {
+          const response = await api.post('/users/verify-otp', {
+            email,
+            otp_code: otpCode,
+          });
+          set({
+            isLoading: false,
+            verificationToken: response.data.verification_token,
+          });
+          return response.data; // { message, verified, verification_token }
+        } catch (err) {
+          const message = err.response?.data?.detail || 'Invalid or expired OTP';
+          set({ isLoading: false, error: message });
+          throw new Error(message);
+        }
+      },
+
+      /**
+       * Complete Signup action — calls FastAPI POST /users/complete-signup
+       * Creates the account, stores the JWT, and logs the user in immediately.
+       */
+      completeSignup: async (firstName, lastName, email, password) => {
+        set({ isLoading: true, error: null });
+        const verificationToken = get().verificationToken;
+
+        if (!verificationToken) {
+          const message = 'Email verification expired, please verify again';
+          set({ isLoading: false, error: message });
+          throw new Error(message);
+        }
+
+        try {
+          const response = await api.post('/users/complete-signup', {
+            first_name: firstName,
+            last_name: lastName,
             email,
             password,
+            verification_token: verificationToken,
           });
-          set({ isLoading: false });
-          return response.data; // { message }
+
+          const { access_token, user_id } = response.data;
+
+          if (access_token) {
+            await tokenStorage.setToken(access_token);
+          }
+
+          // Fetch full profile now that we're logged in
+          const userResponse = await api.get('/users/me');
+          const userData = userResponse.data;
+
+          set({
+            user: userData,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+            verificationToken: null, // no longer needed after account creation
+          });
+
+          return userData;
         } catch (err) {
-          const message = err.response?.data?.detail || 'Failed to set password';
+          const message = err.response?.data?.detail || 'Failed to create account';
           set({ isLoading: false, error: message });
           throw new Error(message);
         }
@@ -103,7 +135,6 @@ export const useAuthStore = create(
             await tokenStorage.setToken(access_token);
           }
 
-          // Fetch logged in user profile
           const userResponse = await api.get('/users/me');
           const userData = userResponse.data;
 
@@ -165,7 +196,6 @@ export const useAuthStore = create(
        */
       biometricLogin: async () => {
         set({ isLoading: true, error: null });
-        // Simulates biometric hardware verification
         return new Promise((resolve) => {
           setTimeout(() => {
             const fallbackUser = get().user || {

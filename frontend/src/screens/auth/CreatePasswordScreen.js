@@ -8,12 +8,14 @@ import { useAuthStore } from '../../store/authStore';
 
 export const CreatePasswordScreen = ({ route, navigation }) => {
   const email = route.params?.email || 'johndoe@gmail.com';
+  const firstName = route.params?.firstName || '';
+  const lastName = route.params?.lastName || '';
   const [password, setPasswordState] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [validationError, setValidationError] = useState('');
   const [invalidField, setInvalidField] = useState(null); // 'password' | 'confirmPassword' | null
 
-  const setPassword = useAuthStore((state) => state.setPassword);
+  const completeSignup = useAuthStore((state) => state.completeSignup);
   const isLoading = useAuthStore((state) => state.isLoading);
   const backendError = useAuthStore((state) => state.error);
   const clearError = useAuthStore((state) => state.clearError);
@@ -61,17 +63,11 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
     clearError();
 
     try {
-      await setPassword(email, password.trim());
+      await completeSignup(firstName, lastName, email, password.trim());
     } catch (err) {
-      console.log('Using mock auth for local testing');
+      return; // backendError is already set in the store, stay on screen
     }
 
-    useAuthStore.getState().updateUser({
-      name: 'Dominion Akinsola',
-      email,
-      first_name: 'Dominion',
-      last_name: 'Akinsola',
-    });
     navigation.navigate('ConnectBlaze');
   };
 

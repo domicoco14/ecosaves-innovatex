@@ -3,41 +3,38 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, status, Depends
 
 from app.schemas.auth import (
-    SignupRequest, SignupResponse, VerifyOtpRequest, VerifyOtpResponse,
-    SetPasswordRequest, LoginRequest, TokenResponse,
+    RequestOtpRequest, RequestOtpResponse,
+    VerifyOtpRequest, VerifyOtpResponse,
+    CompleteSignupRequest, CompleteSignupResponse,
+    ResendOtpRequest, ResendOtpResponse,
+    LoginRequest, TokenResponse,
     ConnectBlazeRequest, CreateBlazeAccountRequest,
     DeleteAccountRequest, DeleteAccountResponse,
-    ResendOtpRequest, ResendOtpResponse,
 )
 from app.db.supabase_client import get_supabase
-from app.core.security import hash_password, verify_password, create_access_token, get_current_user_id
+from app.core.security import (
+    hash_password, verify_password, create_access_token, get_current_user_id,
+    create_email_verification_token, verify_email_verification_token,
+)
 from app.services.otp_service import create_and_send_otp, verify_otp, OtpRateLimitExceeded
 
 router = APIRouter()
 
 
-@router.post("/signup", response_model=SignupResponse, status_code=status.HTTP_201_CREATED)
-def signup(payload: SignupRequest):
+@router.post("/request-otp", response_model=RequestOtpResponse, status_code=status.HTTP_201_CREATED)
+def request_otp(payload: RequestOtpRequest):
     supabase = get_supabase()
 
     existing = supabase.table("users").select("id").eq("email", payload.email).is_("deleted_at", "null").execute()
     if existing.data:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    result = supabase.table("users").insert({
-        "first_name": payload.first_name,
-        "last_name": payload.last_name,
-        "email": payload.email,
-    }).execute()
-
-    user_id = result.data[0]["id"]
-
     try:
         create_and_send_otp(payload.email)
     except OtpRateLimitExceeded as e:
         raise HTTPException(status_code=429, detail=str(e))
 
-    return SignupResponse(message="OTP sent to your email", user_id=user_id)
+    return RequestOtpResponse(message="OTP sent to your email")
 
 
 @router.post("/verify-otp", response_model=VerifyOtpResponse)
@@ -46,20 +43,17 @@ def verify_otp_route(payload: VerifyOtpRequest):
     if not is_valid:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
-    supabase = get_supabase()
-    supabase.table("users").update({"email_verified": True}).eq("email", payload.email).execute()
+    token = create_email_verification_token(payload.email)
+    return VerifyOtpResponse(message="Email verified", verified=True, verification_token=token)
 
-    return VerifyOtpResponse(message="Email verified", verified=True)
 
 @router.post("/resend-otp", response_model=ResendOtpResponse)
 def resend_otp(payload: ResendOtpRequest):
     supabase = get_supabase()
 
-    user = supabase.table("users").select("id, email_verified").eq("email", payload.email).is_("deleted_at", "null").execute()
-    if not user.data:
-        raise HTTPException(status_code=404, detail="User not found")
-    if user.data[0]["email_verified"]:
-        raise HTTPException(status_code=400, detail="Email already verified")
+    existing = supabase.table("users").select("id").eq("email", payload.email).is_("deleted_at", "null").execute()
+    if existing.data:
+        raise HTTPException(status_code=400, detail="Email already registered")
 
     try:
         create_and_send_otp(payload.email)
@@ -68,20 +62,32 @@ def resend_otp(payload: ResendOtpRequest):
 
     return ResendOtpResponse(message="A new OTP has been sent to your email")
 
-@router.post("/set-password", status_code=status.HTTP_200_OK)
-def set_password(payload: SetPasswordRequest):
+
+@router.post("/complete-signup", response_model=CompleteSignupResponse, status_code=status.HTTP_201_CREATED)
+def complete_signup(payload: CompleteSignupRequest):
+    if not verify_email_verification_token(payload.verification_token, payload.email):
+        raise HTTPException(status_code=400, detail="Email verification expired or invalid, please verify again")
+
     supabase = get_supabase()
 
-    user = supabase.table("users").select("*").eq("email", payload.email).execute()
-    if not user.data:
-        raise HTTPException(status_code=404, detail="User not found")
-    if not user.data[0]["email_verified"]:
-        raise HTTPException(status_code=400, detail="Email not verified yet")
+    existing = supabase.table("users").select("id").eq("email", payload.email).is_("deleted_at", "null").execute()
+    if existing.data:
+        raise HTTPException(status_code=400, detail="Email already registered")
 
     password_hash = hash_password(payload.password)
-    supabase.table("users").update({"password_hash": password_hash}).eq("email", payload.email).execute()
 
-    return {"message": "Password set successfully"}
+    result = supabase.table("users").insert({
+        "first_name": payload.first_name,
+        "last_name": payload.last_name,
+        "email": payload.email,
+        "password_hash": password_hash,
+        "email_verified": True,
+    }).execute()
+
+    user_row = result.data[0]
+    token = create_access_token(user_id=user_row["id"], email=user_row["email"])
+
+    return CompleteSignupResponse(message="Account created", user_id=user_row["id"], access_token=token)
 
 
 @router.post("/login", response_model=TokenResponse)

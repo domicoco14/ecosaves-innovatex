@@ -8,6 +8,8 @@ import { useAuthStore } from '../../store/authStore';
 
 export const VerifyEmailScreen = ({ route, navigation }) => {
   const email = route.params?.email || 'johndoe@gmail.com';
+  const firstName = route.params?.firstName || '';
+  const lastName = route.params?.lastName || '';
   const [code, setCode] = useState('');
   const [validationError, setValidationError] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -59,10 +61,10 @@ export const VerifyEmailScreen = ({ route, navigation }) => {
     try {
       await verifyOtp(email, code);
     } catch (err) {
-      console.log('Using mock flow for UI testing');
+      return; // stay on screen if OTP verification actually failed
     }
 
-    navigation.navigate('CreatePassword', { email });
+    navigation.navigate('CreatePassword', { email, firstName, lastName });
   };
 
   const displayedError = validationError || backendError;
