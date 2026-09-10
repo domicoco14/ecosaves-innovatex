@@ -1,10 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EcoSavesLogo } from '../../components/EcoSavesLogo';
 import { InputField } from '../../components/InputField';
 import { Button } from '../../components/Button';
 import { useAuthStore } from '../../store/authStore';
+
+const PASSWORD_RULES = [
+  { key: 'length', label: 'At least 8 characters', test: (pw) => pw.length >= 8 },
+  { key: 'uppercase', label: 'One uppercase letter', test: (pw) => /[A-Z]/.test(pw) },
+  { key: 'lowercase', label: 'One lowercase letter', test: (pw) => /[a-z]/.test(pw) },
+  { key: 'number', label: 'One number', test: (pw) => /[0-9]/.test(pw) },
+  { key: 'special', label: 'One special character', test: (pw) => /[^A-Za-z0-9]/.test(pw) },
+];
 
 export const CreatePasswordScreen = ({ route, navigation }) => {
   const email = route.params?.email || 'johndoe@gmail.com';
@@ -19,6 +27,14 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
   const isLoading = useAuthStore((state) => state.isLoading);
   const backendError = useAuthStore((state) => state.error);
   const clearError = useAuthStore((state) => state.clearError);
+
+  const ruleResults = useMemo(
+    () => PASSWORD_RULES.map((rule) => ({ ...rule, passed: rule.test(password) })),
+    [password]
+  );
+  const allRulesPassed = ruleResults.every((rule) => rule.passed);
+  const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
+  const canSubmit = allRulesPassed && passwordsMatch;
 
   const handlePasswordChange = (text) => {
     setPasswordState(text);
@@ -37,13 +53,8 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
   };
 
   const handleFinish = async () => {
-    if (!password.trim()) {
-      setValidationError('Please enter a password.');
-      setInvalidField('password');
-      return;
-    }
-    if (password.trim().length < 8) {
-      setValidationError('Password must be at least 8 characters.');
+    if (!allRulesPassed) {
+      setValidationError('Please meet all password requirements.');
       setInvalidField('password');
       return;
     }
@@ -52,7 +63,7 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
       setInvalidField('confirmPassword');
       return;
     }
-    if (password.trim() !== confirmPassword.trim()) {
+    if (!passwordsMatch) {
       setValidationError('Passwords do not match.');
       setInvalidField('confirmPassword');
       return;
@@ -63,7 +74,7 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
     clearError();
 
     try {
-      await completeSignup(firstName, lastName, email, password.trim());
+      await completeSignup(firstName, lastName, email, password);
     } catch (err) {
       return; // backendError is already set in the store, stay on screen
     }
@@ -93,6 +104,21 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
               inputStyle={invalidField === 'password' ? styles.inputError : null}
             />
 
+            {password.length > 0 && (
+              <View style={styles.rulesBox}>
+                {ruleResults.map((rule) => (
+                  <View key={rule.key} style={styles.ruleRow}>
+                    <View style={[styles.ruleDot, rule.passed && styles.ruleDotPassed]}>
+                      {rule.passed ? <Text style={styles.ruleCheckmark}>✓</Text> : null}
+                    </View>
+                    <Text style={[styles.ruleLabel, rule.passed && styles.ruleLabelPassed]}>
+                      {rule.label}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
             <InputField
               label="Re-enter Password"
               placeholder="XXXXXXXX"
@@ -101,6 +127,10 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
               onChangeText={handleConfirmPasswordChange}
               inputStyle={invalidField === 'confirmPassword' ? styles.inputError : null}
             />
+
+            {confirmPassword.length > 0 && !passwordsMatch ? (
+              <Text style={styles.mismatchText}>Passwords do not match</Text>
+            ) : null}
           </View>
 
           {displayedError ? <Text style={styles.errorText}>{displayedError}</Text> : null}
@@ -110,7 +140,8 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
           <Button
             title="Get Started"
             loading={isLoading}
-            style={styles.primaryButton}
+            disabled={!canSubmit}
+            style={[styles.primaryButton, !canSubmit && styles.primaryButtonDisabled]}
             onPress={handleFinish}
           />
         </View>
@@ -149,6 +180,48 @@ const styles = StyleSheet.create({
   form: {
     marginTop: 4,
   },
+  rulesBox: {
+    marginTop: -8,
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+  ruleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  ruleDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#C4C9CC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  ruleDotPassed: {
+    backgroundColor: '#2E7D32',
+    borderColor: '#2E7D32',
+  },
+  ruleCheckmark: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  ruleLabel: {
+    fontSize: 13,
+    color: '#737980',
+  },
+  ruleLabelPassed: {
+    color: '#2E7D32',
+  },
+  mismatchText: {
+    color: '#D32F2F',
+    fontSize: 12,
+    marginTop: -8,
+    marginBottom: 12,
+  },
   footer: {
     marginTop: 20,
     width: '100%',
@@ -159,6 +232,9 @@ const styles = StyleSheet.create({
     height: 52,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  primaryButtonDisabled: {
+    backgroundColor: '#B0BEC5',
   },
   inputError: {
     borderColor: '#D32F2F',
