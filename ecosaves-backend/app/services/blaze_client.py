@@ -47,7 +47,7 @@ class BlazeClient:
 
         header = data.get("headerResponse", {})
         if header.get("responseCode") != "000":
-            raise BlazeApiError(f"Token request failed: {header.get('responseDesc')}")
+            raise BlazeApiError(f"Token request failed. Status: {response.status_code}. Full response: {data}")
 
         token_data = data["data"]
         access_token = token_data["access_token"]
