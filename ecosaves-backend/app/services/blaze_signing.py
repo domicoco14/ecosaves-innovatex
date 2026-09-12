@@ -5,7 +5,7 @@ from app.core.config import settings
 
 
 def new_request_id() -> str:
-    return f"REQ{uuid.uuid4().hex[:20].upper()}"
+    return f"REQ{uuid.uuid4().hex[:12].upper()}"
 
 
 def sha512(value: str) -> str:
