@@ -2,7 +2,7 @@ import axios from 'axios';
 import { tokenStorage } from './tokenStorage';
 
 // Default base URL for EcoSaves FastAPI backend
-const API_BASE_URL = 'https://ecosaves.onrender.com/api/v1';
+const API_BASE_URL = 'https://ecosaves-innovatex.onrender.com/api/v1';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
