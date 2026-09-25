@@ -22,6 +22,7 @@ class Settings(BaseSettings):
 
     BLAZE_BASE_URL: str = ""
     BLAZE_AFFILIATE_CODE: str = ""
+    BLAZE_ACCOUNT_ENQUIRY_SUBSCRIPTION_KEY: str = ""
     BLAZE_CLIENT_ID: str = ""
     BLAZE_SOURCE_CODE: str = ""
     BLAZE_PUBLIC_KEY: str = ""

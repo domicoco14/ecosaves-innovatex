@@ -41,7 +41,11 @@ class BlazeClient:
         response = requests.post(
             f"{settings.BLAZE_BASE_URL}/auth/app/token",
             json=body,
-            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Ocp-Apim-Subscription-Key": settings.BLAZE_ACCOUNT_ENQUIRY_SUBSCRIPTION_KEY,
+            },
         )
         data = response.json()
 
