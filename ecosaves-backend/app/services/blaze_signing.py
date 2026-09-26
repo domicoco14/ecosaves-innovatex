@@ -20,7 +20,7 @@ def build_request_token(request_id: str, request_type: str) -> str:
         + request_id
         + request_type
         + settings.BLAZE_IP_ADDRESS
-        + settings.BLAZE_SECRET_KEY
+        + settings.BLAZE_ACCOUNT_ENQUIRY_SECRET_KEY
     )
     return sha512(token_string)
 
@@ -35,6 +35,6 @@ def build_secure_hash(request_id: str, request_type: str, request_token: str, ex
         + settings.BLAZE_IP_ADDRESS
         + request_token
         + "".join(extra_fields)
-        + settings.BLAZE_SECRET_KEY
+        + settings.BLAZE_ACCOUNT_ENQUIRY_SECRET_KEY
     )
     return sha512(hash_string)

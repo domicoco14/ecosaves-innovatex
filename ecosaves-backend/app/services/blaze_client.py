@@ -33,13 +33,13 @@ class BlazeClient:
                 "requestType": request_type,
                 "requestToken": request_token,
             },
-            "publicKey": settings.BLAZE_PUBLIC_KEY,
+            "publicKey": settings.BLAZE_ACCOUNT_ENQUIRY_PUBLIC_KEY,
             "serviceCode": service_code,
             "secureHash": secure_hash,
         }
 
         response = requests.post(
-            f"{settings.BLAZE_BASE_URL}/auth/app/token",
+            f"{settings.BLAZE_ACCOUNT_ENQUIRY_BASE_URL}/auth/app/token",
             json=body,
             headers={
                 "Content-Type": "application/json",

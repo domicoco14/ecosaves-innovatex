@@ -20,13 +20,13 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str = ""
     RESEND_FROM_EMAIL: str = "onboarding@resend.dev"
 
-    BLAZE_BASE_URL: str = ""
-    BLAZE_AFFILIATE_CODE: str = ""
+    BLAZE_ACCOUNT_ENQUIRY_BASE_URL: str = ""
     BLAZE_ACCOUNT_ENQUIRY_SUBSCRIPTION_KEY: str = ""
+    BLAZE_AFFILIATE_CODE: str = ""
     BLAZE_CLIENT_ID: str = ""
     BLAZE_SOURCE_CODE: str = ""
-    BLAZE_PUBLIC_KEY: str = ""
-    BLAZE_SECRET_KEY: str = ""
+    BLAZE_ACCOUNT_ENQUIRY_PUBLIC_KEY: str = ""
+    BLAZE_ACCOUNT_ENQUIRY_SECRET_KEY: str = ""
     BLAZE_IP_ADDRESS: str = ""
 
     CORS_ORIGINS: list[str] = ["*"]
