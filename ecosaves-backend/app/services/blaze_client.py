@@ -39,7 +39,7 @@ class BlazeClient:
         }
 
         response = requests.post(
-            f"{settings.BLAZE_ACCOUNT_ENQUIRY_BASE_URL}/auth/app/token",
+            f"{settings.BLAZE_BASE_URL}/auth/app/token",
             json=body,
             headers={
                 "Content-Type": "application/json",
