@@ -45,13 +45,12 @@ class BlazeClient:
                 "Content-Type": "application/json",
                 "Accept": "application/json",
                 "Ocp-Apim-Subscription-Key": settings.BLAZE_ACCOUNT_ENQUIRY_SUBSCRIPTION_KEY,
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
             },
         )
         
-        # --- ADD THESE TWO LINES FOR DEBUGGING ---
-        print(f"DEBUG - Status Code: {response.status_code}")
-        print(f"DEBUG - Raw Response Text: {response.text}")
-        # ------------------------------------------
+        # print(f"DEBUG - Status Code: {response.status_code}")
+        # print(f"DEBUG - Raw Response Text: {response.text}")
 
         data = response.json()
 
