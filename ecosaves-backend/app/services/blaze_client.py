@@ -48,6 +48,12 @@ class BlazeClient:
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
             },
         )
+
+        # If the bank returns HTML or an error instead of JSON, show it clearly:
+        try:
+            data = response.json()
+        except Exception:
+            raise BlazeApiError(f"Bank returned non-JSON (Status {response.status_code}): {response.text}")
         
         # print(f"DEBUG - Status Code: {response.status_code}")
         # print(f"DEBUG - Raw Response Text: {response.text}")
