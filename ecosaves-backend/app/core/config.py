@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str = ""
     RESEND_FROM_EMAIL: str = "onboarding@resend.dev"
 
+    BLAZE_BASE_URL: str = ""
     BLAZE_ACCOUNT_ENQUIRY_BASE_URL: str = "https://artxuat.ecobank.com/corp-api/services/api/v2/integration"
     BLAZE_ACCOUNT_ENQUIRY_SUBSCRIPTION_KEY: str = ""
     BLAZE_AFFILIATE_CODE: str = ""
