@@ -47,6 +47,12 @@ class BlazeClient:
                 "Ocp-Apim-Subscription-Key": settings.BLAZE_ACCOUNT_ENQUIRY_SUBSCRIPTION_KEY,
             },
         )
+        
+        # --- ADD THESE TWO LINES FOR DEBUGGING ---
+        print(f"DEBUG - Status Code: {response.status_code}")
+        print(f"DEBUG - Raw Response Text: {response.text}")
+        # ------------------------------------------
+
         data = response.json()
 
         header = data.get("headerResponse", {})
