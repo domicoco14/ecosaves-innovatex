@@ -42,3 +42,16 @@ def get_current_user_id(
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     return user_id
+
+def create_email_verification_token(email: str) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+    payload = {"email": email, "purpose": "email_verification", "exp": expire}
+    return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+
+
+def verify_email_verification_token(token: str, expected_email: str) -> bool:
+    try:
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+    except JWTError:
+        return False
+    return payload.get("purpose") == "email_verification" and payload.get("email") == expected_email

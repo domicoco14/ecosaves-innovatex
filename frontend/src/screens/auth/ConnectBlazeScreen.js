@@ -23,27 +23,8 @@ export const ConnectBlazeScreen = ({ navigation }) => {
 
   const user = useAuthStore((state) => state.user);
   const updateUser = useAuthStore((state) => state.updateUser);
-  const login = useAuthStore((state) => state.login);
 
-  const handleFinishConnection = async (accNo) => {
-    const targetAcc = accNo || accountNumber.trim() || '1441002006858';
-    updateUser({
-      blaze_linked: true,
-      blaze_account_number: targetAcc,
-    });
-    await login(
-      {
-        ...(user || {}),
-        name: user?.name || verifiedName || 'Dominion Akinsola',
-        email: user?.email || 'dominion@ecosaves.ng',
-        first_name: user?.first_name || 'Dominion',
-        last_name: user?.last_name || 'Akinsola',
-        blaze_linked: true,
-        blaze_account_number: targetAcc,
-      },
-      'mock_token_123'
-    );
-
+  const goToMainApp = () => {
     try {
       if (navigation.canGoBack()) {
         navigation.popToTop();
@@ -55,59 +36,39 @@ export const ConnectBlazeScreen = ({ navigation }) => {
     }
   };
 
-  const handleLinkLater = async () => {
-    updateUser({
-      blaze_linked: false,
-    });
-    await login(
-      {
-        ...(user || {}),
-        name: user?.name || 'Dominion Akinsola',
-        email: user?.email || 'dominion@ecosaves.ng',
-        first_name: user?.first_name || 'Dominion',
-        last_name: user?.last_name || 'Akinsola',
-        blaze_linked: false,
-      },
-      'mock_token_123'
-    );
-
-    try {
-      if (navigation.canGoBack()) {
-        navigation.popToTop();
-      } else {
-        navigation.navigate('MainTabs');
-      }
-    } catch (e) {
-      // Stack switch handles navigation
-    }
+  const handleLinkLater = () => {
+    updateUser({ blaze_linked: false });
+    goToMainApp();
   };
 
   const handleVerifyAndConnect = async () => {
-    if (!accountNumber.trim() || accountNumber.length < 10) {
+    if (!accountNumber.trim() || accountNumber.trim().length < 10) {
       Alert.alert('Account Number Required', 'Please enter a valid 10-digit Ecobank Blaze account number.');
       return;
     }
 
     setLoading(true);
     try {
-      await api.post('/users/connect-blaze', {
+      const response = await api.post('/users/connect-blaze', {
         blaze_account_identifier: accountNumber.trim(),
       });
 
-      handleFinishConnection(accountNumber.trim());
-    } catch (err) {
-      console.log('Using sandbox test verification for ConnectBlaze');
-      const testName = `${user?.first_name || 'Dominion'} ${user?.last_name || 'Akinsola'}`;
-      setVerifiedName(testName);
+      const confirmedName = response.data?.account_name;
+      setVerifiedName(confirmedName || '');
 
-      setTimeout(() => {
-        Alert.alert('Account Verified! ✅', `Welcome ${testName}. Your Ecobank Blaze account is connected.`, [
-          {
-            text: 'Go to Dashboard',
-            onPress: () => handleFinishConnection(accountNumber.trim() || '1441002006858'),
-          },
-        ]);
-      }, 800);
+      updateUser({
+        blaze_linked: true,
+        blaze_account_number: response.data?.account_no || accountNumber.trim(),
+      });
+
+      Alert.alert(
+        'Account Verified ✅',
+        `Welcome ${confirmedName || ''}. Your Ecobank Blaze account is connected.`,
+        [{ text: 'Go to Dashboard', onPress: goToMainApp }]
+      );
+    } catch (err) {
+      const message = err.response?.data?.detail || 'We couldn\'t verify that account. Please check the number and try again.';
+      Alert.alert('Verification Failed', message);
     } finally {
       setLoading(false);
     }
@@ -117,19 +78,13 @@ export const ConnectBlazeScreen = ({ navigation }) => {
     if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
-      const isAuth = useAuthStore.getState().isAuthenticated;
-      if (isAuth) {
-        navigation.navigate('MainTabs');
-      } else {
-        navigation.navigate('Onboarding');
-      }
+      navigation.navigate('MainTabs');
     }
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Top Header Logo + Back Button */}
         <View style={styles.headerRow}>
           <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.7}>
             <Ionicons name="arrow-back" size={24} color="#161C20" />
@@ -156,11 +111,7 @@ export const ConnectBlazeScreen = ({ navigation }) => {
             value={accountNumber}
             onChangeText={(text) => {
               setAccountNumber(text);
-              if (text.length === 10) {
-                setVerifiedName(`${user?.first_name || 'Dominion'} ${user?.last_name || 'Akinsola'}`);
-              } else {
-                setVerifiedName('');
-              }
+              setVerifiedName('');
             }}
           />
 
@@ -180,7 +131,6 @@ export const ConnectBlazeScreen = ({ navigation }) => {
           />
         </Card>
 
-        {/* Link to Instant Account Creation */}
         <View style={styles.createPromptBox}>
           <Text style={styles.createPromptText}>
             Don't have an Ecobank Blaze account?
@@ -190,11 +140,7 @@ export const ConnectBlazeScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Skip for now option */}
-        <TouchableOpacity
-          style={styles.skipBtn}
-          onPress={handleLinkLater}
-        >
+        <TouchableOpacity style={styles.skipBtn} onPress={handleLinkLater}>
           <Text style={styles.skipText}>Link Account Later</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -203,113 +149,23 @@ export const ConnectBlazeScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F6F9F9',
-  },
-  container: {
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 40,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#EFEFEF',
-  },
-  bankBadge: {
-    backgroundColor: '#E6F3F7',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  bankBadgeText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#005B7F',
-    letterSpacing: 0.5,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#161C20',
-    marginBottom: 8,
-    lineHeight: 30,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#737980',
-    lineHeight: 20,
-    marginBottom: 24,
-  },
-  formCard: {
-    padding: 20,
-    borderRadius: 20,
-    marginBottom: 20,
-  },
-  verifiedBox: {
-    backgroundColor: '#E6F5EB',
-    borderColor: '#A3E0B7',
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 14,
-    marginVertical: 12,
-  },
-  verifiedLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#29875A',
-  },
-  verifiedName: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#161C20',
-    marginVertical: 2,
-  },
-  verifiedBank: {
-    fontSize: 11,
-    color: '#737980',
-  },
-  connectBtn: {
-    marginTop: 12,
-  },
-  createPromptBox: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 18,
-    alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#EFEFEF',
-  },
-  createPromptText: {
-    fontSize: 13,
-    color: '#737980',
-    marginBottom: 6,
-  },
-  createLinkText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#E98591',
-  },
-  skipBtn: {
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  skipText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#737980',
-  },
+  safeArea: { flex: 1, backgroundColor: '#F6F9F9' },
+  container: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 40 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
+  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#EFEFEF' },
+  bankBadge: { backgroundColor: '#E6F3F7', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
+  bankBadgeText: { fontSize: 11, fontWeight: '800', color: '#005B7F', letterSpacing: 0.5 },
+  title: { fontSize: 24, fontWeight: '800', color: '#161C20', marginBottom: 8, lineHeight: 30 },
+  subtitle: { fontSize: 14, color: '#737980', lineHeight: 20, marginBottom: 24 },
+  formCard: { padding: 20, borderRadius: 20, marginBottom: 20 },
+  verifiedBox: { backgroundColor: '#E6F5EB', borderColor: '#A3E0B7', borderWidth: 1, borderRadius: 14, padding: 14, marginVertical: 12 },
+  verifiedLabel: { fontSize: 12, fontWeight: '700', color: '#29875A' },
+  verifiedName: { fontSize: 16, fontWeight: '800', color: '#161C20', marginVertical: 2 },
+  verifiedBank: { fontSize: 11, color: '#737980' },
+  connectBtn: { marginTop: 12 },
+  createPromptBox: { backgroundColor: '#FFFFFF', borderRadius: 18, padding: 18, alignItems: 'center', marginBottom: 16, borderWidth: 1, borderColor: '#EFEFEF' },
+  createPromptText: { fontSize: 13, color: '#737980', marginBottom: 6 },
+  createLinkText: { fontSize: 14, fontWeight: '800', color: '#E98591' },
+  skipBtn: { alignItems: 'center', paddingVertical: 12 },
+  skipText: { fontSize: 13, fontWeight: '700', color: '#737980' },
 });

@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { View, TextInput, StyleSheet } from 'react-native';
 
-export const OTPInput = ({ length = 4, onComplete, value, onChange }) => {
+export const OTPInput = ({ length = 4, onComplete, value, onChange, error }) => {
   const [code, setCode] = useState(Array(length).fill(''));
   const inputsRef = useRef([]);
 
@@ -38,7 +38,11 @@ export const OTPInput = ({ length = 4, onComplete, value, onChange }) => {
           <TextInput
             key={index}
             ref={(ref) => (inputsRef.current[index] = ref)}
-            style={[styles.box, code[index] ? styles.activeBox : null]}
+            style={[
+              styles.box,
+              code[index] ? styles.activeBox : null,
+              error ? styles.errorBox : null,
+            ]}
             keyboardType="number-pad"
             maxLength={1}
             value={code[index]}
@@ -74,5 +78,8 @@ const styles = StyleSheet.create({
   activeBox: {
     borderColor: '#005B7F',
     backgroundColor: '#FFFFFF',
+  },
+  errorBox: {
+    borderColor: '#D32F2F',
   },
 });

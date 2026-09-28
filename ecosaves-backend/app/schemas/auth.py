@@ -1,15 +1,12 @@
 from pydantic import BaseModel, EmailStr
 
 
-class SignupRequest(BaseModel):
-    first_name: str
-    last_name: str
+class RequestOtpRequest(BaseModel):
     email: EmailStr
 
 
-class SignupResponse(BaseModel):
+class RequestOtpResponse(BaseModel):
     message: str
-    user_id: str
 
 
 class VerifyOtpRequest(BaseModel):
@@ -20,11 +17,29 @@ class VerifyOtpRequest(BaseModel):
 class VerifyOtpResponse(BaseModel):
     message: str
     verified: bool
+    verification_token: str | None = None
 
 
-class SetPasswordRequest(BaseModel):
+class CompleteSignupRequest(BaseModel):
+    first_name: str
+    last_name: str
     email: EmailStr
     password: str
+    verification_token: str
+
+
+class CompleteSignupResponse(BaseModel):
+    message: str
+    user_id: str
+    access_token: str
+
+
+class ResendOtpRequest(BaseModel):
+    email: EmailStr
+
+
+class ResendOtpResponse(BaseModel):
+    message: str
 
 
 class LoginRequest(BaseModel):

@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.routes import circles, contributions, payouts, users
 
+from app.api.routes import blaze_test
+
 app = FastAPI(
     title="EcoSaves API",
     description="Backend for EcoSaves — a digitized ajo/esusu savings circle app",
@@ -30,6 +32,7 @@ def health():
 
 
 app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
+app.include_router(blaze_test.router, prefix="/api/v1/blaze", tags=["blaze-test"])
 app.include_router(circles.router, prefix="/api/v1/circles", tags=["circles"])
 app.include_router(contributions.router, prefix="/api/v1/contributions", tags=["contributions"])
 app.include_router(payouts.router, prefix="/api/v1/payouts", tags=["payouts"])
