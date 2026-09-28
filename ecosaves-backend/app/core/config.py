@@ -29,7 +29,9 @@ class Settings(BaseSettings):
     BLAZE_SOURCE_CODE: str = ""
     BLAZE_ACCOUNT_ENQUIRY_PUBLIC_KEY: str = ""
     BLAZE_ACCOUNT_ENQUIRY_SECRET_KEY: str = ""
-    BLAZE_IP_ADDRESS: str = ""
+    BLAZE_IP_ADDRESS: str = "127.0.0.1"
+    MONO_PUBLIC_KEY: str = ""
+    MONO_SECRET_KEY: str = ""
 
     CORS_ORIGINS: list[str] = ["*"]
 
