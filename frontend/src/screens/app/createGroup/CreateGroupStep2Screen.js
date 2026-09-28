@@ -1,35 +1,75 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { InputField } from '../../../components/InputField';
 import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
-import { useAuthStore } from '../../../store/authStore';
 
 export const CreateGroupStep2Screen = ({ route, navigation }) => {
   const step1Data = route.params || {};
-  const user = useAuthStore((state) => state.user);
+  const [startDate, setStartDate] = useState(() => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
 
-  const [startDate, setStartDate] = useState('September 5, 2026');
-  const [payoutOrder, setPayoutOrder] = useState('Fixed');
+  const previewTimeline = useMemo(() => {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(startDate);
+    if (!match) return [];
 
-  const previewTimeline = [
-    { id: '1', name: 'Amina Bello', turn: 'Turn #1', date: 'Sep 14', status: 'Paid Out', isUser: false },
-    { id: '2', name: 'Chuka Okafor', turn: 'Turn #2', date: 'Oct 28', status: 'Pending', isUser: false },
-    { id: '3', name: `${user?.first_name || 'Dominion'} (You)`, turn: 'Turn #3', date: 'Nov 11', status: 'Your Turn', isUser: true },
-    { id: '4', name: 'Mrs. Adeyemi', turn: 'Turn #4', date: 'Nov 25', status: 'Pending', isUser: false },
-  ];
+    const [, yearText, monthText, dayText] = match;
+    const year = Number(yearText);
+    const month = Number(monthText) - 1;
+    const day = Number(dayText);
+    const start = new Date(year, month, day);
+    if (start.getFullYear() !== year || start.getMonth() !== month || start.getDate() !== day) return [];
+
+    const count = Number(step1Data.members_count) || 3;
+    return Array.from({ length: count }, (_, index) => {
+      const payoutDate = new Date(start);
+      if (step1Data.frequency === 'Monthly') {
+        const targetMonth = start.getMonth() + index;
+        payoutDate.setDate(1);
+        payoutDate.setMonth(targetMonth);
+        const lastDay = new Date(payoutDate.getFullYear(), payoutDate.getMonth() + 1, 0).getDate();
+        payoutDate.setDate(Math.min(day, lastDay));
+      } else {
+        payoutDate.setDate(start.getDate() + index * (step1Data.frequency === 'Bi-weekly' ? 14 : 7));
+      }
+
+      return {
+        id: String(index + 1),
+        name: index === 0 ? 'You (circle creator)' : `Member ${index + 1} (open slot)`,
+        date: payoutDate.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }),
+        isCreator: index === 0,
+      };
+    });
+  }, [startDate, step1Data.frequency, step1Data.members_count]);
 
   const handleNext = () => {
-    if (!startDate.trim()) {
-      Alert.alert('Missing Info', 'Please specify a start date for the group.');
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(startDate.trim());
+    if (!match) {
+      Alert.alert('Invalid date', 'Enter the start date in YYYY-MM-DD format.');
+      return;
+    }
+
+    const [, yearText, monthText, dayText] = match;
+    const selectedDate = new Date(Number(yearText), Number(monthText) - 1, Number(dayText));
+    if (
+      selectedDate.getFullYear() !== Number(yearText) ||
+      selectedDate.getMonth() !== Number(monthText) - 1 ||
+      selectedDate.getDate() !== Number(dayText)
+    ) {
+      Alert.alert('Invalid date', 'Choose a real calendar date in YYYY-MM-DD format.');
       return;
     }
 
     navigation.navigate('CreateGroupStep3', {
       ...step1Data,
       start_date: startDate.trim(),
-      payout_order: payoutOrder,
+      payout_order: 'fixed',
     });
   };
 
@@ -51,43 +91,20 @@ export const CreateGroupStep2Screen = ({ route, navigation }) => {
         <View style={styles.infoCard}>
           <Text style={styles.infoIcon}>ℹ️</Text>
           <Text style={styles.infoText}>
-            EcoSaves rotates the pooled funds securely. Choose how turns are assigned below.
+            The creator is included in the member limit. Payout positions are assigned in join order.
           </Text>
         </View>
 
         <InputField
           label="START DATE *"
-          placeholder="September 5, 2026"
+          placeholder="YYYY-MM-DD"
           value={startDate}
           onChangeText={setStartDate}
+          autoCapitalize="none"
         />
 
-        {/* PAYOUT ORDER ASSIGNMENT SELECTOR */}
-        <Text style={styles.fieldLabel}>PAYOUT ORDER ASSIGNMENT *</Text>
-        <View style={styles.segmentedContainer}>
-          {['Random', 'Fixed', 'Bidding'].map((item) => (
-            <TouchableOpacity
-              key={item}
-              style={[
-                styles.segmentBtn,
-                payoutOrder === item && styles.segmentBtnActive,
-              ]}
-              onPress={() => setPayoutOrder(item)}
-            >
-              <Text
-                style={[
-                  styles.segmentText,
-                  payoutOrder === item && styles.segmentTextActive,
-                ]}
-              >
-                {item}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
         {/* PREVIEW ROTATION TIMELINE */}
-        <Text style={styles.fieldLabel}>PREVIEW ROTATION TIMELINE</Text>
+        <Text style={styles.fieldLabel}>ESTIMATED PAYOUT DATES · JOIN ORDER</Text>
         <Card style={styles.timelineCard}>
           {previewTimeline.map((item, index) => (
             <View
@@ -103,20 +120,16 @@ export const CreateGroupStep2Screen = ({ route, navigation }) => {
 
               <View style={styles.timelineDetails}>
                 <Text style={styles.memberName}>{item.name}</Text>
-                <Text style={styles.memberTurnText}>{item.turn} • {item.date}</Text>
+                <Text style={styles.memberTurnText}>Turn #{index + 1} • {item.date}</Text>
               </View>
 
-              {item.isUser ? (
+              {item.isCreator ? (
                 <View style={styles.badgeCoral}>
-                  <Text style={styles.badgeCoralText}>{item.status}</Text>
-                </View>
-              ) : item.status === 'Paid Out' ? (
-                <View style={styles.badgeGreen}>
-                  <Text style={styles.badgeGreenText}>{item.status}</Text>
+                  <Text style={styles.badgeCoralText}>Joined</Text>
                 </View>
               ) : (
                 <View style={styles.badgeGray}>
-                  <Text style={styles.badgeGrayText}>{item.status}</Text>
+                  <Text style={styles.badgeGrayText}>Open</Text>
                 </View>
               )}
             </View>

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Card } from '../../components/Card';
 import { StatusBadge } from '../../components/StatusBadge';
 import { Button } from '../../components/Button';
@@ -8,68 +9,75 @@ import { ProgressBar } from '../../components/ProgressBar';
 import { AvatarStack } from '../../components/AvatarStack';
 import { useCurrencyStore } from '../../store/currencyStore';
 import { CurrencySelectorModal } from '../../components/CurrencySelectorModal';
+import { api } from '../../lib/api';
 
 export const GroupsScreen = ({ navigation }) => {
   const selectedCurrency = useCurrencyStore((state) => state.selectedCurrency);
   const formatAmount = useCurrencyStore((state) => state.formatAmount);
 
   const [showCurrencyModal, setShowCurrencyModal] = useState(false);
+  const [circles, setCircles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
-  const activeGroups = [
-    {
-      id: 'g1',
-      name: 'Yaba Traders Ajo',
-      contribution: `${formatAmount(5000)}/cycle`,
-      membersCount: 12,
-      progress: 0,
-      badge: 'Your turn #3',
-      badgeType: 'coral',
-      icon: '🛍️',
-    },
-    {
-      id: 'g2',
-      name: 'Family Esusu Circle',
-      contribution: `${formatAmount(5000)}/cycle`,
-      membersCount: 12,
-      progress: 10,
-      badge: 'Active',
-      badgeType: 'active',
-      icon: '🏡',
-    },
-    {
-      id: 'g3',
-      name: 'Lagos Tech Savings',
-      contribution: `${formatAmount(10000)}/cycle`,
-      membersCount: 8,
-      progress: 50,
-      badge: 'Your turn #2',
-      badgeType: 'coral',
-      icon: '💻',
-    },
-  ];
+  const loadCircles = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
+    try {
+      const response = await api.get('/circles/');
+      setCircles(response.data);
+    } catch (err) {
+      setLoadError(err.response?.data?.detail || 'Could not load your circles.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const completedGroups = [
-    {
-      id: 'g4',
-      name: 'Pan-African Traders Circle',
-      contribution: `${formatAmount(5000)}/cycle`,
-      membersCount: 12,
-      progress: 100,
-      badge: 'Completed',
-      badgeType: 'completed',
-      icon: '🛍️',
-    },
-    {
-      id: 'g5',
-      name: "Tech Bro's Ajo",
-      contribution: `${formatAmount(15000)}/cycle`,
-      membersCount: 6,
-      progress: 100,
-      badge: 'Completed',
-      badgeType: 'completed',
-      icon: '💻',
-    },
-  ];
+  useFocusEffect(useCallback(() => {
+    loadCircles();
+  }, [loadCircles]));
+
+  const activeGroups = circles.filter((circle) => circle.status !== 'completed');
+  const completedGroups = circles.filter((circle) => circle.status === 'completed');
+
+  const renderCircle = (circle, completed = false) => {
+    const memberCount = circle.members_count || 0;
+    const progress = Math.min(100, Math.round((memberCount / circle.member_limit) * 100));
+    const amount = formatAmount(Number(circle.contribution_amount) || 0);
+    const frequency = circle.frequency?.replace('-', ' ') || 'cycle';
+    const badge = completed ? 'Completed' : circle.status === 'active' ? 'Active' : 'Forming';
+
+    return (
+      <TouchableOpacity
+        key={circle.id}
+        activeOpacity={0.88}
+        onPress={() => navigation.navigate('GroupDetail', { group: circle })}
+      >
+        <Card style={[styles.groupCard, completed && styles.completedCard]}>
+          <View style={styles.cardHeader}>
+            <View style={styles.iconBox}>
+              <Text style={styles.iconText}>🏡</Text>
+            </View>
+            <View style={styles.titleBlock}>
+              <Text style={styles.groupName}>{circle.name}</Text>
+              <Text style={styles.groupSub}>
+                {memberCount}/{circle.member_limit} members • {amount}/{frequency}
+              </Text>
+            </View>
+            <StatusBadge label={badge} type={completed ? 'muted' : circle.status === 'active' ? 'active' : 'pending'} />
+          </View>
+
+          <View style={styles.cardFooter}>
+            <AvatarStack count={memberCount} size={22} />
+            <View style={styles.barBlock}>
+              <ProgressBar progress={progress} color={completed ? '#29875A' : '#E98591'} height={6} />
+              <Text style={styles.barText}>{memberCount} of {circle.member_limit} members joined</Text>
+            </View>
+          </View>
+        </Card>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -80,7 +88,9 @@ export const GroupsScreen = ({ navigation }) => {
         <View style={styles.headerRow}>
           <View>
             <Text style={styles.pageTitle}>Your Groups</Text>
-            <Text style={styles.pageSubtitle}>3 Active Circles • 2 Completed</Text>
+            <Text style={styles.pageSubtitle}>
+              {activeGroups.length} Active/Forming • {completedGroups.length} Completed
+            </Text>
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -105,82 +115,28 @@ export const GroupsScreen = ({ navigation }) => {
         </View>
 
         {/* ACTIVE SECTION */}
-        <Text style={styles.sectionLabel}>ACTIVE</Text>
-
-        {activeGroups.map((group) => (
-          <TouchableOpacity
-            key={group.id}
-            activeOpacity={0.88}
-            onPress={() => navigation.navigate('GroupDetail', { group })}
-          >
-            <Card style={styles.groupCard}>
-              <View style={styles.cardHeader}>
-                <View style={styles.iconBox}>
-                  <Text style={styles.iconText}>{group.icon}</Text>
-                </View>
-                <View style={styles.titleBlock}>
-                  <Text style={styles.groupName}>{group.name}</Text>
-                  <Text style={styles.groupSub}>{group.membersCount} members • {group.contribution}</Text>
-                </View>
-                {group.badgeType === 'coral' ? (
-                  <View style={styles.badgeCoral}>
-                    <Text style={styles.badgeCoralText}>{group.badge}</Text>
-                  </View>
-                ) : (
-                  <StatusBadge label={group.badge} type="active" />
-                )}
-              </View>
-
-              <View style={styles.cardFooter}>
-                <AvatarStack count={4} size={22} />
-                <View style={styles.barBlock}>
-                  <ProgressBar progress={group.progress} color={group.progress > 0 ? '#E98591' : '#E0E6E8'} height={6} />
-                  <Text style={styles.barText}>{group.progress}% funded this cycle</Text>
-                </View>
-              </View>
-            </Card>
-          </TouchableOpacity>
-        ))}
+        <Text style={styles.sectionLabel}>ACTIVE &amp; FORMING</Text>
+        {loading ? <Text style={styles.stateText}>Loading your circles…</Text> : null}
+        {!loading && loadError ? <Text style={styles.errorText}>{loadError}</Text> : null}
+        {!loading && !loadError && activeGroups.length === 0 ? (
+          <Text style={styles.stateText}>You have not joined or created a circle yet.</Text>
+        ) : null}
+        {!loading && !loadError ? activeGroups.map((circle) => renderCircle(circle)) : null}
 
         {/* COMPLETED SECTION */}
-        <Text style={styles.sectionLabel}>COMPLETED</Text>
+        {completedGroups.length > 0 ? <Text style={styles.sectionLabel}>COMPLETED</Text> : null}
 
-        {completedGroups.map((group) => (
-          <TouchableOpacity
-            key={group.id}
-            activeOpacity={0.88}
-            onPress={() => navigation.navigate('GroupDetail', { group })}
-          >
-            <Card style={[styles.groupCard, styles.completedCard]}>
-              <View style={styles.cardHeader}>
-                <View style={[styles.iconBox, { backgroundColor: '#F0F3F5' }]}>
-                  <Text style={styles.iconText}>{group.icon}</Text>
-                </View>
-                <View style={styles.titleBlock}>
-                  <Text style={styles.groupName}>{group.name}</Text>
-                  <Text style={styles.groupSub}>{group.membersCount} members • {group.contribution}</Text>
-                </View>
-                <View style={styles.badgeCompleted}>
-                  <Text style={styles.badgeCompletedText}>{group.badge}</Text>
-                </View>
-              </View>
+        {!loading && !loadError ? completedGroups.map((circle) => renderCircle(circle, true)) : null}
 
-              <View style={styles.cardFooter}>
-                <AvatarStack count={4} size={22} />
-                <View style={styles.barBlock}>
-                  <ProgressBar progress={100} color="#29875A" height={6} />
-                  <Text style={styles.barText}>100% funded this cycle</Text>
-                </View>
-              </View>
-            </Card>
-          </TouchableOpacity>
-        ))}
-
-        {/* Join or Create Group Button */}
         <Button
-          title="+ Join or Create a Group"
-          onPress={() => navigation.navigate('CreateGroupStack')}
+          title="Join a Circle with a Code"
+          onPress={() => navigation.navigate('JoinCircle')}
           style={styles.joinBtn}
+        />
+        <Button
+          title="+ Create a Circle"
+          onPress={() => navigation.navigate('CreateGroupStack')}
+          style={styles.createBtn}
         />
       </ScrollView>
     </SafeAreaView>
@@ -324,6 +280,22 @@ const styles = StyleSheet.create({
     color: '#737980',
     marginTop: 4,
     textAlign: 'right',
+  },
+  stateText: {
+    color: '#737980',
+    fontSize: 13,
+    marginBottom: 14,
+  },
+  errorText: {
+    color: '#B42318',
+    fontSize: 13,
+    marginBottom: 14,
+  },
+  createBtn: {
+    backgroundColor: '#005B7F',
+    borderRadius: 16,
+    height: 52,
+    marginTop: 10,
   },
   joinBtn: {
     marginTop: 16,

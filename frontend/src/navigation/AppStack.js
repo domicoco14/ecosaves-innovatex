@@ -4,6 +4,7 @@ import { MainTabs } from './MainTabs';
 import { GroupDetailScreen } from '../screens/app/GroupDetailScreen';
 import { ContributionHistoryScreen } from '../screens/app/ContributionHistoryScreen';
 import { GroupChatScreen } from '../screens/app/GroupChatScreen';
+import { JoinCircleScreen } from '../screens/app/JoinCircleScreen';
 import { CreateGroupStack } from './CreateGroupStack';
 import { ConnectBlazeScreen } from '../screens/auth/ConnectBlazeScreen';
 import { CreateBlazeAccountScreen } from '../screens/auth/CreateBlazeAccountScreen';
@@ -43,6 +44,11 @@ export const AppStack = () => {
         name="CreateGroupStack"
         component={CreateGroupStack}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="JoinCircle"
+        component={JoinCircleScreen}
+        options={{ title: 'Join a Circle' }}
       />
       <Stack.Screen
         name="ConnectBlaze"

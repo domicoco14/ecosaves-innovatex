@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
@@ -8,28 +8,36 @@ import { api } from '../../../lib/api';
 export const CreateGroupStep3Screen = ({ route, navigation }) => {
   const groupData = route.params || {};
   const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [createdCircle, setCreatedCircle] = useState(null);
 
   const groupName = groupData.name || 'Yaba Traders Ajo';
   const contribution = groupData.contribution_amount || '5,000';
   const frequency = groupData.frequency || 'Weekly';
   const membersCount = groupData.members_count || 12;
   const startDate = groupData.start_date || 'September 5, 2026';
-  const payoutOrder = groupData.payout_order || 'Fixed Rotation';
+  const payoutOrder = 'Join order';
 
   // Calculate total pool size
   const numericContrib = parseFloat(String(contribution).replace(/[^0-9.]/g, '')) || 5000;
   const totalPoolSize = `₦${(numericContrib * membersCount).toLocaleString()}`;
 
-  const inviteLink = `ecosaves.app/join/${groupName.toLowerCase().replace(/\s+/g, '-')}-2026`;
-
-  const handleCopyLink = () => {
-    setCopied(true);
-    Alert.alert('Link Copied! 📋', 'Group invite link copied to clipboard.');
-    setTimeout(() => setCopied(false), 2000);
+  const handleShareInvite = async () => {
+    if (!createdCircle?.id) return;
+    try {
+      await Share.share({
+        message: `Join my EcoSaves circle, ${groupName}. Open EcoSaves, choose Groups > Join, and enter this invitation code: ${createdCircle.id}`,
+      });
+    } catch {
+      Alert.alert('Unable to share', 'Please share the invitation code manually.');
+    }
   };
 
   const handleConfirm = async () => {
+    if (createdCircle) {
+      navigation.getParent()?.navigate('MainTabs', { screen: 'Groups' });
+      return;
+    }
+
     setLoading(true);
     try {
       const payload = {
@@ -40,24 +48,13 @@ export const CreateGroupStep3Screen = ({ route, navigation }) => {
         start_date: startDate,
       };
 
-      await api.post('/circles/', payload);
-
-      Alert.alert('Group Created! 🎉', `${groupName} is now active. Invite members to start contributing!`, [
-        {
-          text: 'Go to Groups',
-          onPress: () => navigation.getParent()?.navigate('MainTabs', { screen: 'Groups' }),
-        },
-      ]);
+      const response = await api.post('/circles/', payload);
+      setCreatedCircle(response.data);
     } catch (err) {
-      console.log('Using local fallback for group creation');
-      setTimeout(() => {
-        Alert.alert('Group Created! 🎉', `${groupName} is now active. Invite members to start contributing!`, [
-          {
-            text: 'Go to Groups',
-            onPress: () => navigation.getParent()?.navigate('MainTabs', { screen: 'Groups' }),
-          },
-        ]);
-      }, 1000);
+      Alert.alert(
+        'Circle not created',
+        err.response?.data?.detail || 'Could not create the circle. Check your connection and try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -106,28 +103,29 @@ export const CreateGroupStep3Screen = ({ route, navigation }) => {
           </View>
         </Card>
 
-        {/* INVITE SAVINGS BUDDIES CARD */}
+        {/* A real invite code is available after the circle has been saved. */}
         <Text style={styles.sectionLabel}>INVITE SAVINGS BUDDIES</Text>
         <Card style={styles.inviteCard}>
-          <Text style={styles.inviteSub}>
-            Share the invitation code below with members so they can join this digital esusu pool.
-          </Text>
-
-          <View style={styles.linkBox}>
-            <Text style={styles.linkText} numberOfLines={1}>{inviteLink}</Text>
-            <TouchableOpacity style={styles.copyBtn} onPress={handleCopyLink}>
-              <Text style={styles.copyBtnText}>{copied ? 'Copied!' : 'Copy'}</Text>
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity style={styles.whatsAppBtn} activeOpacity={0.85}>
-            <Text style={styles.whatsAppIcon}>💬</Text>
-            <Text style={styles.whatsAppBtnText}>Share via WhatsApp</Text>
-          </TouchableOpacity>
+          {createdCircle ? (
+            <>
+              <Text style={styles.inviteSub}>
+                Share this code with signed-in EcoSaves users. They can enter it from Groups → Join.
+              </Text>
+              <Text selectable style={styles.inviteCode}>{createdCircle.id}</Text>
+              <TouchableOpacity style={styles.whatsAppBtn} activeOpacity={0.85} onPress={handleShareInvite}>
+                <Text style={styles.whatsAppIcon}>↗</Text>
+                <Text style={styles.whatsAppBtnText}>Share invitation code</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <Text style={styles.inviteSub}>
+              Create the circle first to generate its invitation code.
+            </Text>
+          )}
         </Card>
 
         <Button
-          title="Create Group"
+          title={createdCircle ? 'Go to My Circles' : 'Create Circle'}
           loading={loading}
           onPress={handleConfirm}
           style={styles.createBtn}
@@ -220,6 +218,16 @@ const styles = StyleSheet.create({
     color: '#737980',
     lineHeight: 17,
     marginBottom: 14,
+  },
+  inviteCode: {
+    backgroundColor: '#F0F4F6',
+    borderRadius: 12,
+    color: '#005B7F',
+    fontSize: 13,
+    fontWeight: '800',
+    marginBottom: 14,
+    padding: 12,
+    textAlign: 'center',
   },
   linkBox: {
     flexDirection: 'row',
