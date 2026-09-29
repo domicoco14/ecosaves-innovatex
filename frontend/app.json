@@ -19,9 +19,16 @@
           "action": "VIEW",
           "autoVerify": true,
           "data": [
-            { "scheme": "https", "host": "ecosaves.app", "pathPrefix": "/join" }
+            {
+              "scheme": "https",
+              "host": "ecosaves.app",
+              "pathPrefix": "/join"
+            }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ],
       "adaptiveIcon": {
@@ -31,7 +38,9 @@
       "package": "com.domicoco.ecosavesinnovatex"
     },
     "ios": {
-      "associatedDomains": ["applinks:ecosaves.app"]
+      "associatedDomains": [
+        "applinks:ecosaves.app"
+      ]
     },
     "plugins": [
       "expo-secure-store",
@@ -42,6 +51,12 @@
       "eas": {
         "projectId": "b5d68ca1-caa9-4486-b5c4-b4b8a8da6e6e"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/b5d68ca1-caa9-4486-b5c4-b4b8a8da6e6e"
     }
   }
 }
