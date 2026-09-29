@@ -12,6 +12,9 @@ export const useAuthStore = create(
       isLoading: false,
       error: null,
       verificationToken: null, // holds the short-lived token between verify-otp and complete-signup
+      pendingInviteCode: null,
+      setPendingInviteCode: (pendingInviteCode) => set({ pendingInviteCode }),
+      clearPendingInviteCode: () => set({ pendingInviteCode: null }),
 
       /**
        * Request OTP action — calls FastAPI POST /users/request-otp

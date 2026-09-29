@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.api.routes import circles, contributions, payouts, savings, users
+from app.api.routes import chat, circles, contributions, payouts, savings, users
 
 app = FastAPI(
     title="EcoSaves API",
@@ -31,6 +31,7 @@ def health():
 
 app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 app.include_router(circles.router, prefix="/api/v1/circles", tags=["circles"])
+app.include_router(chat.router, prefix="/api/v1/circles", tags=["circle-chat"])
 app.include_router(savings.router, prefix="/api/v1/savings", tags=["personal-savings"])
 app.include_router(contributions.router, prefix="/api/v1/contributions", tags=["contributions"])
 app.include_router(payouts.router, prefix="/api/v1/payouts", tags=["payouts"])

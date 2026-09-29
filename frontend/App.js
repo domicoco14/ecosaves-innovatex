@@ -6,9 +6,18 @@ import { NavigationContainer } from '@react-navigation/native';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
 export default function App() {
+  const linking = {
+    prefixes: ['ecosaves://', 'https://ecosaves.app'],
+    config: {
+      screens: {
+        JoinCircle: 'join/:inviteCode',
+      },
+    },
+  };
+
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
+      <NavigationContainer linking={linking}>
         <StatusBar style="dark" />
         <RootNavigator />
       </NavigationContainer>

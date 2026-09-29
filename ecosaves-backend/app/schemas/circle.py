@@ -39,6 +39,7 @@ class CircleMemberResponse(BaseModel):
 class CircleResponse(BaseModel):
     id: str
     invite_code: str
+    invite_slug: str
     name: str
     contribution_amount: Decimal
     frequency: str
@@ -55,6 +56,6 @@ class CircleResponse(BaseModel):
 class CircleJoinRequest(BaseModel):
     invite_code: str = Field(
         min_length=8,
-        max_length=64,
+        max_length=120,
         validation_alias=AliasChoices("invite_code", "circle_id"),
     )

@@ -1,25 +1,42 @@
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { InputField } from '../../components/InputField';
 import { api } from '../../lib/api';
+import { useAuthStore } from '../../store/authStore';
 
-export const JoinCircleScreen = ({ navigation }) => {
-  const [circleCode, setCircleCode] = useState('');
+export const JoinCircleScreen = ({ route, navigation }) => {
+  const [circleCode, setCircleCode] = useState(route.params?.inviteCode || '');
   const [loading, setLoading] = useState(false);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const setPendingInviteCode = useAuthStore((state) => state.setPendingInviteCode);
+  const clearPendingInviteCode = useAuthStore((state) => state.clearPendingInviteCode);
 
   const handleJoin = async () => {
-    const circleId = circleCode.trim();
-    if (!circleId) {
+    const inviteInput = circleCode.trim();
+    const urlMatch = inviteInput.match(/(?:https:\/\/ecosaves\.app\/join\/|ecosaves:\/\/join\/)([a-z0-9-]+)/i);
+    const inviteCode = (urlMatch?.[1] || inviteInput).trim().toLowerCase();
+    if (!inviteCode) {
       Alert.alert('Invitation code required', 'Enter the code shared by the circle creator.');
+      return;
+    }
+
+    if (!isAuthenticated) {
+      setPendingInviteCode(inviteCode);
+      Alert.alert('Sign in to join', 'You need an EcoSaves account to join this circle.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign in', onPress: () => navigation.navigate('Login') },
+        { text: 'Create account', onPress: () => navigation.navigate('Signup') },
+      ]);
       return;
     }
 
     setLoading(true);
     try {
-      const response = await api.post('/circles/join', { invite_code: circleId });
+      const response = await api.post('/circles/join', { invite_code: inviteCode });
+      clearPendingInviteCode();
       Alert.alert('You joined the circle', `${response.data.name} has been added to your groups.`, [
         {
           text: 'View circle',
@@ -38,27 +55,31 @@ export const JoinCircleScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <Text style={styles.title}>Join a circle</Text>
-        <Text style={styles.subtitle}>Enter the invitation code shared by the circle creator.</Text>
+        <Text style={styles.subtitle}>Open a shared EcoSaves invite link or enter the invitation code from the circle creator.</Text>
 
         <Card style={styles.card}>
           <View style={styles.infoBox}>
             <Text style={styles.infoText}>
-              You need to be signed in to join. Your payout position is assigned when you join.
+              {isAuthenticated
+                ? 'Your account is required to join. Your payout position is assigned when you join.'
+                : 'You can preview the invitation here. Sign in or create an account to join; we will keep this invitation for you.'}
             </Text>
           </View>
           <InputField
             label="INVITATION CODE"
             value={circleCode}
             onChangeText={setCircleCode}
-            placeholder="Paste circle code"
+            placeholder="Paste invitation link or code"
             autoCapitalize="none"
             autoCorrect={false}
           />
           <Button title="Join circle" loading={loading} onPress={handleJoin} style={styles.button} />
         </Card>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -68,6 +89,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F6F9F9',
   },
+  keyboardFrame: { flex: 1 },
   container: {
     flexGrow: 1,
     paddingHorizontal: 20,

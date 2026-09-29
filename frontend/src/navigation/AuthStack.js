@@ -5,6 +5,7 @@ import { SignupScreen } from '../screens/auth/SignupScreen';
 import { VerifyEmailScreen } from '../screens/auth/VerifyEmailScreen';
 import { CreatePasswordScreen } from '../screens/auth/CreatePasswordScreen';
 import { LoginScreen } from '../screens/auth/LoginScreen';
+import { JoinCircleScreen } from '../screens/app/JoinCircleScreen';
 
 const Stack = createStackNavigator();
 
@@ -42,6 +43,11 @@ export const AuthStack = () => {
         name="Login"
         component={LoginScreen}
         options={{ title: 'Login' }}
+      />
+      <Stack.Screen
+        name="JoinCircle"
+        component={JoinCircleScreen}
+        options={{ title: 'Join a Circle' }}
       />
     </Stack.Navigator>
   );

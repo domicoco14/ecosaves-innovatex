@@ -8,6 +8,8 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -148,16 +150,44 @@ export const WalletScreen = () => {
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View>
-            <Text style={styles.title}>Personal savings</Text>
-            <Text style={styles.subtitle}>Plans and self-reported saving activity</Text>
+            <Text style={styles.title}>EcoSaves Wallet</Text>
+            <Text style={styles.subtitle}>Wallet balance and personal savings</Text>
           </View>
-          <Text style={styles.totalAmount}>{formatAmount(totalReported)}</Text>
         </View>
 
+        <Card style={styles.walletHeroCard}>
+          <Text style={styles.walletLabel}>Available wallet balance</Text>
+          <Text style={styles.walletAmount}>{formatAmount(0)}</Text>
+          <View style={styles.walletActions}>
+            <View style={[styles.walletAction, styles.walletActionDisabled]}>
+              <Text style={styles.walletActionTextDisabled}>＋ Add funds</Text>
+            </View>
+            <View style={[styles.walletAction, styles.walletActionOutline]}>
+              <Text style={styles.walletActionTextOutline}>↑ Withdraw</Text>
+            </View>
+          </View>
+          <Text style={styles.walletNotice}>Payments are not connected. Wallet balance remains ₦0.</Text>
+        </Card>
+
+        <Text style={styles.sectionLabel}>LINKED ACCOUNT</Text>
+        <Card style={styles.linkedCard}>
+          <View style={styles.bankIcon}><Text style={styles.bankIconText}>▤</Text></View>
+          <View style={styles.linkedCopy}>
+            <Text style={styles.linkedTitle}>No account connected</Text>
+            <Text style={styles.linkedSubtitle}>Bank linking will be available after a verified provider integration.</Text>
+          </View>
+        </Card>
+
+        <View style={styles.activityHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>Personal savings</Text>
+            <Text style={styles.sectionSubtitle}>Self-reported tracking · {formatAmount(totalReported)}</Text>
+          </View>
+        </View>
         <Card style={styles.noticeCard}>
           <Text style={styles.noticeTitle}>Tracking only — no money is moved or locked</Text>
           <Text style={styles.noticeText}>
-            Entries are reported by you and are not verified deposits. EcoSaves does not hold these funds or automatically release a payout. Blaze transfers and enforced locks are not connected yet.
+            Entries are reported by you and are not verified deposits. EcoSaves does not hold these funds or automatically release a payout.
           </Text>
         </Card>
 
@@ -224,6 +254,7 @@ export const WalletScreen = () => {
 
       <Modal visible={showCreate} transparent animationType="slide" onRequestClose={() => setShowCreate(false)}>
         <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <ScrollView contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled">
             <View style={styles.modalCard}>
               <Text style={styles.modalTitle}>Create a plan</Text>
@@ -254,11 +285,13 @@ export const WalletScreen = () => {
               </TouchableOpacity>
             </View>
           </ScrollView>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
 
       <Modal visible={Boolean(entryPlan)} transparent animationType="slide" onRequestClose={() => setEntryPlan(null)}>
         <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Log a saving</Text>
             <Text style={styles.modalSubtitle}>
@@ -271,6 +304,7 @@ export const WalletScreen = () => {
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
     </SafeAreaView>
@@ -284,6 +318,26 @@ const styles = StyleSheet.create({
   title: { color: '#161C20', fontSize: 24, fontWeight: '800' },
   subtitle: { color: '#737980', fontSize: 13, marginTop: 4 },
   totalAmount: { color: '#005B7F', fontSize: 22, fontWeight: '800', marginTop: 12 },
+  walletHeroCard: { backgroundColor: '#005B7F', borderRadius: 20, marginBottom: 22, padding: 20 },
+  walletLabel: { color: '#D9F1FB', fontSize: 13, fontWeight: '600' },
+  walletAmount: { color: '#FFFFFF', fontSize: 30, fontWeight: '800', marginVertical: 13 },
+  walletActions: { flexDirection: 'row', marginBottom: 13 },
+  walletAction: { alignItems: 'center', borderRadius: 12, flex: 1, justifyContent: 'center', minHeight: 46, paddingHorizontal: 8 },
+  walletActionDisabled: { backgroundColor: '#FFFFFF', marginRight: 8, opacity: 0.68 },
+  walletActionOutline: { borderColor: 'rgba(255,255,255,0.55)', borderWidth: 1 },
+  walletActionTextDisabled: { color: '#005B7F', fontSize: 13, fontWeight: '800' },
+  walletActionTextOutline: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
+  walletNotice: { color: '#D9F1FB', fontSize: 11, lineHeight: 16 },
+  sectionLabel: { color: '#737980', fontSize: 11, fontWeight: '800', letterSpacing: 0.6, marginBottom: 9 },
+  linkedCard: { alignItems: 'center', flexDirection: 'row', marginBottom: 22, padding: 15 },
+  bankIcon: { alignItems: 'center', backgroundColor: '#E6F3F7', borderRadius: 13, height: 44, justifyContent: 'center', marginRight: 12, width: 44 },
+  bankIconText: { color: '#005B7F', fontSize: 21, fontWeight: '800' },
+  linkedCopy: { flex: 1 },
+  linkedTitle: { color: '#161C20', fontSize: 13, fontWeight: '800' },
+  linkedSubtitle: { color: '#737980', fontSize: 10, lineHeight: 15, marginTop: 3 },
+  activityHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  sectionTitle: { color: '#161C20', fontSize: 18, fontWeight: '800' },
+  sectionSubtitle: { color: '#737980', fontSize: 11, marginTop: 3 },
   noticeCard: { backgroundColor: '#FFF8E6', borderColor: '#F5D98B', borderWidth: 1, padding: 16, marginBottom: 18 },
   noticeTitle: { color: '#765300', fontSize: 13, fontWeight: '800', marginBottom: 6 },
   noticeText: { color: '#765300', fontSize: 12, lineHeight: 18 },
@@ -306,6 +360,7 @@ const styles = StyleSheet.create({
   primaryButton: { backgroundColor: '#005B7F', borderRadius: 16, height: 52, marginTop: 12 },
   secondaryButton: { backgroundColor: '#005B7F', borderRadius: 14, height: 46 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 20, 30, 0.58)', justifyContent: 'center', paddingHorizontal: 18 },
+  keyboardFrame: { flex: 1, justifyContent: 'center' },
   modalScroll: { flexGrow: 1, justifyContent: 'center', paddingVertical: 24 },
   modalCard: { backgroundColor: '#FFFFFF', borderRadius: 22, padding: 20 },
   modalTitle: { color: '#161C20', fontSize: 20, fontWeight: '800' },

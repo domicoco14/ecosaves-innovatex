@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../../components/Card';
 import { ProgressBar } from '../../components/ProgressBar';
 import { StatusBadge } from '../../components/StatusBadge';
+import { Button } from '../../components/Button';
 import { useAuthStore } from '../../store/authStore';
 import { api } from '../../lib/api';
 
@@ -11,7 +12,7 @@ const formatDate = (value) => new Date(`${value}T00:00:00`).toLocaleDateString(u
   year: 'numeric', month: 'short', day: 'numeric',
 });
 
-export const GroupDetailScreen = ({ route }) => {
+export const GroupDetailScreen = ({ route, navigation }) => {
   const [circle, setCircle] = useState(route.params?.group || null);
   const [loadError, setLoadError] = useState('');
   const user = useAuthStore((state) => state.user);
@@ -60,6 +61,12 @@ export const GroupDetailScreen = ({ route }) => {
         </View>
         <ProgressBar progress={memberLimit ? (memberCount / memberLimit) * 100 : 0} color="#005B7F" height={9} />
       </Card>
+
+      <Button
+        title="Message Group"
+        onPress={() => navigation.navigate('GroupChat', { circle })}
+        style={styles.chatButton}
+      />
 
       <Card style={styles.spotlightCard}>
         <Text style={styles.spotlightLabel}>YOUR PAYOUT TURN</Text>
@@ -123,6 +130,7 @@ const styles = StyleSheet.create({
   progressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 7 },
   progressPercent: { fontSize: 12, fontWeight: '700', color: '#005B7F' },
   spotlightCard: { backgroundColor: '#FFF8F9', borderColor: '#FCD7DC', borderWidth: 1, marginBottom: 22, padding: 18 },
+  chatButton: { backgroundColor: '#005B7F', borderRadius: 16, height: 50, marginBottom: 18 },
   spotlightLabel: { color: '#E98591', fontSize: 11, fontWeight: '800', marginBottom: 6 },
   spotlightTitle: { fontSize: 18, fontWeight: '800', color: '#161C20', marginBottom: 4 },
   spotlightSub: { fontSize: 12, color: '#737980', lineHeight: 17 },

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Share } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Share, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
@@ -20,12 +20,16 @@ export const CreateGroupStep3Screen = ({ route, navigation }) => {
   // Calculate total pool size
   const numericContrib = Number(contribution.replace(/[^0-9.]/g, '')) || 0;
   const totalPoolSize = `₦${(numericContrib * membersCount).toLocaleString()}`;
+  const inviteUrl = createdCircle?.invite_slug
+    ? `https://ecosaves.app/join/${createdCircle.invite_slug}`
+    : '';
 
   const handleShareInvite = async () => {
-    if (!createdCircle?.id) return;
+    if (!createdCircle?.invite_slug) return;
     try {
       await Share.share({
-        message: `Join my EcoSaves circle, ${groupName}. Open EcoSaves, choose Groups > Join, and enter this invitation code: ${createdCircle.invite_code}`,
+        title: `Join ${groupName} on EcoSaves`,
+        message: `Join my EcoSaves circle, ${groupName}: ${inviteUrl}\n\nIf the link does not open the app, sign in, choose Groups → Join, and enter: ${createdCircle.invite_slug}`,
       });
     } catch {
       Alert.alert('Unable to share', 'Please share the invitation code manually.');
@@ -67,6 +71,7 @@ export const CreateGroupStep3Screen = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       {/* Deep Teal Step Header */}
       <View style={styles.stepHeader}>
         <View style={styles.stepHeaderTop}>
@@ -78,7 +83,7 @@ export const CreateGroupStep3Screen = ({ route, navigation }) => {
         <Text style={styles.stepTitle}>Review Group</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         {/* GROUP DETAILS SUMMARY CARD */}
         <Text style={styles.sectionLabel}>GROUP DETAILS SUMMARY</Text>
         <Card style={styles.summaryCard}>
@@ -108,18 +113,24 @@ export const CreateGroupStep3Screen = ({ route, navigation }) => {
           </View>
         </Card>
 
-        {/* A real invite code is available after the circle has been saved. */}
+        {/* A real, readable invite URL is available after the circle has been saved. */}
         <Text style={styles.sectionLabel}>INVITE SAVINGS BUDDIES</Text>
         <Card style={styles.inviteCard}>
           {createdCircle ? (
             <>
               <Text style={styles.inviteSub}>
-                Share this code with signed-in EcoSaves users. They can enter it from Groups → Join.
+                Share this link with your members. Joining requires an EcoSaves account.
               </Text>
-              <Text selectable style={styles.inviteCode}>{createdCircle.invite_code}</Text>
+              <View style={styles.linkBox}>
+                <Text selectable style={styles.linkText} numberOfLines={1}>{inviteUrl}</Text>
+                <TouchableOpacity style={styles.copyBtn} activeOpacity={0.85} onPress={handleShareInvite}>
+                  <Text style={styles.copyBtnText}>Copy / Share</Text>
+                </TouchableOpacity>
+              </View>
+              <Text selectable style={styles.inviteCode}>Invite code: {createdCircle.invite_slug}</Text>
               <TouchableOpacity style={styles.whatsAppBtn} activeOpacity={0.85} onPress={handleShareInvite}>
                 <Text style={styles.whatsAppIcon}>↗</Text>
-                <Text style={styles.whatsAppBtnText}>Share invitation code</Text>
+                <Text style={styles.whatsAppBtnText}>Share invitation link</Text>
               </TouchableOpacity>
             </>
           ) : (
@@ -136,6 +147,7 @@ export const CreateGroupStep3Screen = ({ route, navigation }) => {
           style={styles.createBtn}
         />
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -145,6 +157,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F6F9F9',
   },
+  keyboardFrame: { flex: 1 },
   stepHeader: {
     backgroundColor: '#005B7F',
     paddingHorizontal: 20,

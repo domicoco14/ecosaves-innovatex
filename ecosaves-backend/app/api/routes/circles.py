@@ -74,6 +74,7 @@ def _circle_response(circle: dict, user_id: str) -> CircleResponse:
     return CircleResponse(
         id=circle["id"],
         invite_code=circle["invite_code"],
+        invite_slug=circle["invite_slug"],
         name=circle["name"],
         contribution_amount=circle["contribution_amount"],
         frequency=circle["frequency"],
@@ -154,7 +155,9 @@ def get_circle(circle_id: UUID, user_id: str = Depends(get_current_user_id)):
 def join_circle(payload: CircleJoinRequest, user_id: str = Depends(get_current_user_id)):
     supabase = get_supabase()
     invite_code = payload.invite_code.strip().lower()
-    if not re.fullmatch(r"[0-9a-f]{32}", invite_code):
+    is_legacy_code = re.fullmatch(r"[0-9a-f]{32}", invite_code)
+    is_readable_slug = re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", invite_code)
+    if not (is_legacy_code or is_readable_slug):
         raise HTTPException(status_code=404, detail="Invitation code not found")
     try:
         result = supabase.rpc("join_circle_atomic", {

@@ -3,6 +3,7 @@
     "name": "EcoSaves",
     "slug": "ecosaves-innovatex",
     "version": "1.0.0",
+    "scheme": "ecosaves",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -12,11 +13,25 @@
       "backgroundColor": "#005B7F"
     },
     "android": {
+      "softwareKeyboardLayoutMode": "resize",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "ecosaves.app", "pathPrefix": "/join" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#005B7F"
       },
       "package": "com.domicoco.ecosavesinnovatex"
+    },
+    "ios": {
+      "associatedDomains": ["applinks:ecosaves.app"]
     },
     "plugins": [
       "expo-secure-store",

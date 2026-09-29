@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { InputField } from '../../../components/InputField';
 import { Button } from '../../../components/Button';
@@ -27,6 +27,7 @@ export const CreateGroupStep1Screen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       {/* Deep Teal Step Header */}
       <View style={styles.stepHeader}>
         <View style={styles.stepHeaderTop}>
@@ -38,7 +39,7 @@ export const CreateGroupStep1Screen = ({ navigation }) => {
         <Text style={styles.stepTitle}>Group Setup</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <InputField
           label="GROUP NAME *"
           placeholder="Yaba Traders Ajo"
@@ -108,6 +109,7 @@ export const CreateGroupStep1Screen = ({ navigation }) => {
           style={styles.nextBtn}
         />
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -117,6 +119,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F6F9F9',
   },
+  keyboardFrame: { flex: 1 },
   stepHeader: {
     backgroundColor: '#005B7F',
     paddingHorizontal: 20,
