@@ -1,307 +1,274 @@
-import React, { useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Modal,
-  TextInput,
   Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
+import { Card } from '../../components/Card';
+import { ProgressBar } from '../../components/ProgressBar';
 import { StatusBadge } from '../../components/StatusBadge';
-import { useAuthStore } from '../../store/authStore';
-import { useCurrencyStore } from '../../store/currencyStore';
-import { CurrencySelectorModal } from '../../components/CurrencySelectorModal';
+import { api } from '../../lib/api';
 
-export const WalletScreen = ({ navigation }) => {
-  const user = useAuthStore((state) => state.user);
-  const selectedCurrency = useCurrencyStore((state) => state.selectedCurrency);
-  const formatAmount = useCurrencyStore((state) => state.formatAmount);
+const todayIso = () => {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+};
 
-  const blazeAccountNo = user?.blaze_account_number || '1441002006858';
-  const lastFour = blazeAccountNo.slice(-4);
+const formatAmount = (amount) => `₦${Number(amount || 0).toLocaleString()}`;
+const makeIdempotencyKey = () => `${Date.now()}-${Math.random().toString(36).slice(2, 14)}`;
 
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
-  const [showCurrencyModal, setShowCurrencyModal] = useState(false);
-  const [amountInput, setAmountInput] = useState('10000');
-  const [processing, setProcessing] = useState(false);
-  const [balance, setBalance] = useState(0);
-  const [transactions, setTransactions] = useState([]);
+const TextEntry = ({ label, value, onChangeText, placeholder, keyboardType = 'default' }) => (
+  <View style={styles.inputBlock}>
+    <Text style={styles.inputLabel}>{label}</Text>
+    <TextInput
+      style={styles.textInput}
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      placeholderTextColor="#9EA5AD"
+      keyboardType={keyboardType}
+      autoCapitalize={keyboardType === 'default' ? 'sentences' : 'none'}
+    />
+  </View>
+);
 
-  const quickAmounts = ['5000', '10000', '25000', '50000', '100000'];
+export const WalletScreen = () => {
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+  const [entryPlan, setEntryPlan] = useState(null);
+  const entryKey = useRef(makeIdempotencyKey());
 
-  const handleDeposit = () => {
-    const num = parseFloat(amountInput);
-    if (isNaN(num) || num <= 0) {
-      Alert.alert('Invalid Amount', 'Please enter a valid amount to deposit.');
-      return;
+  const [name, setName] = useState('');
+  const [targetAmount, setTargetAmount] = useState('');
+  const [contributionAmount, setContributionAmount] = useState('');
+  const [frequency, setFrequency] = useState('monthly');
+  const [startDate, setStartDate] = useState(todayIso());
+  const [maturityDate, setMaturityDate] = useState('');
+  const [entryAmount, setEntryAmount] = useState('');
+  const [entryNote, setEntryNote] = useState('');
+
+  const loadPlans = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
+    try {
+      const response = await api.get('/savings/');
+      setPlans(response.data);
+    } catch (err) {
+      setLoadError(err.response?.data?.detail || err.message || 'Could not load savings plans.');
+    } finally {
+      setLoading(false);
     }
-    setProcessing(true);
-    setTimeout(() => {
-      setProcessing(false);
-      setShowAddModal(false);
-      setBalance((prev) => prev + num);
+  }, []);
 
-      const newTx = {
-        id: Date.now().toString(),
-        title: 'Ecobank Blaze Wallet Topup',
-        meta: 'Today • Deposit',
-        amount: `+${formatAmount(num, true)}`,
-        type: 'credit',
-        icon: '⬇️',
-      };
+  useFocusEffect(useCallback(() => {
+    loadPlans();
+  }, [loadPlans]));
 
-      setTransactions((prev) => [newTx, ...prev]);
-
-      Alert.alert(
-        'Deposit Successful! 🎉',
-        `${formatAmount(num, true)} has been added to your EcoSaves Wallet via Ecobank Blaze account ${blazeAccountNo}.`
-      );
-    }, 1200);
+  const resetCreateForm = () => {
+    setName('');
+    setTargetAmount('');
+    setContributionAmount('');
+    setFrequency('monthly');
+    setStartDate(todayIso());
+    setMaturityDate('');
   };
 
-  const handleWithdraw = () => {
-    const num = parseFloat(amountInput);
-    if (isNaN(num) || num <= 0) {
-      Alert.alert('Invalid Amount', 'Please enter a valid withdrawal amount.');
+  const createPlan = async () => {
+    const target = Number(targetAmount.replace(/,/g, ''));
+    const contribution = Number(contributionAmount.replace(/,/g, ''));
+    if (!name.trim() || !Number.isFinite(target) || target <= 0 || !Number.isFinite(contribution) || contribution <= 0) {
+      Alert.alert('Check your details', 'Enter a plan name and positive target and scheduled contribution amounts.');
       return;
     }
-    if (num > balance) {
-      Alert.alert('Insufficient Funds', 'Withdrawal amount exceeds available wallet balance.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(maturityDate) || maturityDate <= startDate) {
+      Alert.alert('Check your dates', 'Use YYYY-MM-DD dates, and choose a maturity date after the start date.');
       return;
     }
-    setProcessing(true);
-    setTimeout(() => {
-      setProcessing(false);
-      setShowWithdrawModal(false);
-      setBalance((prev) => prev - num);
 
-      const newTx = {
-        id: Date.now().toString(),
-        title: 'Withdrawal to Ecobank Blaze',
-        meta: 'Today • Transfer',
-        amount: `-${formatAmount(num, true)}`,
-        type: 'debit',
-        icon: '⬆️',
-      };
-
-      setTransactions((prev) => [newTx, ...prev]);
-
-      Alert.alert(
-        'Withdrawal Initiated! 🏦',
-        `${formatAmount(num, true)} has been queued for transfer to your verified Ecobank Blaze account.`
-      );
-    }, 1200);
+    setSaving(true);
+    try {
+      await api.post('/savings/', {
+        name: name.trim(),
+        target_amount: target,
+        contribution_amount: contribution,
+        frequency,
+        start_date: startDate,
+        maturity_date: maturityDate,
+      });
+      setShowCreate(false);
+      resetCreateForm();
+      await loadPlans();
+    } catch (err) {
+      Alert.alert('Plan not created', err.response?.data?.detail || err.message || 'Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleCopyAccount = () => {
-    Alert.alert('Account Number Copied! 📋', `Ecobank Blaze account ${blazeAccountNo} copied to clipboard.`);
+  const recordEntry = async () => {
+    const amount = Number(entryAmount.replace(/,/g, ''));
+    if (!entryPlan || !Number.isFinite(amount) || amount <= 0) {
+      Alert.alert('Check the amount', 'Enter a positive amount to log.');
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.post(`/savings/${entryPlan.id}/entries`, {
+        amount,
+        idempotency_key: entryKey.current,
+        note: entryNote.trim() || null,
+      });
+      entryKey.current = makeIdempotencyKey();
+      setEntryPlan(null);
+      setEntryAmount('');
+      setEntryNote('');
+      await loadPlans();
+    } catch (err) {
+      Alert.alert('Entry not recorded', err.response?.data?.detail || err.message || 'Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
+
+  const totalReported = plans.reduce((total, plan) => total + Number(plan.saved_amount || 0), 0);
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <CurrencySelectorModal visible={showCurrencyModal} onClose={() => setShowCurrencyModal(false)} />
-
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Sleek Top Header */}
-        <View style={styles.headerRow}>
+        <View style={styles.header}>
           <View>
-            <Text style={styles.pageTitle}>Blaze Wallet</Text>
-            <Text style={styles.pageSubtitle}>Ecobank Blaze Account Integration</Text>
+            <Text style={styles.title}>Personal savings</Text>
+            <Text style={styles.subtitle}>Plans and self-reported saving activity</Text>
           </View>
-
-          {/* Pan-African Currency Switcher Pill */}
-          <TouchableOpacity
-            style={styles.currencyPillHeader}
-            onPress={() => setShowCurrencyModal(true)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.currencyPillText}>
-              {selectedCurrency.flag} {selectedCurrency.code} ({selectedCurrency.symbol}) ▼
-            </Text>
-          </TouchableOpacity>
+          <Text style={styles.totalAmount}>{formatAmount(totalReported)}</Text>
         </View>
 
-        {/* Hero Wallet Card */}
-        <Card style={styles.walletHeroCard}>
-          <Text style={styles.walletSub}>Total Wallet Balance</Text>
-          <Text style={styles.walletBalance}>
-            {formatAmount(balance, true)}
+        <Card style={styles.noticeCard}>
+          <Text style={styles.noticeTitle}>Tracking only — no money is moved or locked</Text>
+          <Text style={styles.noticeText}>
+            Entries are reported by you and are not verified deposits. EcoSaves does not hold these funds or automatically release a payout. Blaze transfers and enforced locks are not connected yet.
           </Text>
-
-          <View style={styles.heroBtnRow}>
-            <TouchableOpacity
-              style={styles.addFundsBtn}
-              onPress={() => {
-                setAmountInput('10000');
-                setShowAddModal(true);
-              }}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.addFundsText}>+ Add Funds</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.withdrawBtn}
-              onPress={() => {
-                setAmountInput('5000');
-                setShowWithdrawModal(true);
-              }}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.withdrawText}>↑ Withdraw</Text>
-            </TouchableOpacity>
-          </View>
         </Card>
 
-        {/* Linked Account Section */}
-        <Text style={styles.sectionLabel}>Linked Account</Text>
-        <TouchableOpacity activeOpacity={0.88} onPress={handleCopyAccount}>
-          <Card style={styles.linkedAccountCard}>
-            <View style={styles.bankIconBox}>
-              <Text style={styles.bankIconText}>🏦</Text>
-            </View>
-
-            <View style={styles.bankDetails}>
-              <Text style={styles.bankName}>Ecobank Blaze Account</Text>
-              <View style={styles.accBadgeRow}>
-                <Text style={styles.accMaskText}>•••••• {lastFour}</Text>
-                <View style={styles.checkBadge}>
-                  <Text style={styles.checkBadgeText}>✓</Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.copyPill}>
-              <Text style={styles.copyPillText}>Copy 📋</Text>
-            </View>
-          </Card>
-        </TouchableOpacity>
-
-        {/* Transaction History */}
-        <View style={styles.historyHeaderRow}>
-          <Text style={styles.sectionLabel}>Transaction History</Text>
-          {transactions.length > 0 && (
-            <TouchableOpacity onPress={() => navigation.navigate('ContributionHistory')}>
-              <Text style={styles.seeAllText}>See All</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {transactions.length === 0 ? (
+        {loading ? <Text style={styles.stateText}>Loading your plans…</Text> : null}
+        {!loading && loadError ? (
           <Card style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>No transaction history yet</Text>
-            <Text style={styles.emptySub}>Top up your wallet using your Ecobank Blaze account to start your Pan-African savings journey.</Text>
+            <Text style={styles.emptyTitle}>Savings plans unavailable</Text>
+            <Text style={styles.emptyText}>{loadError}</Text>
+            <Button title="Try again" onPress={loadPlans} style={styles.secondaryButton} />
           </Card>
-        ) : (
-          transactions.map((tx) => (
-            <Card key={tx.id} style={styles.txCard}>
-              <View style={[styles.txIconBox, tx.type === 'debit' ? styles.txIconDebit : styles.txIconCredit]}>
-                <Text style={styles.txIconText}>{tx.icon}</Text>
-              </View>
+        ) : null}
+        {!loading && !loadError && plans.length === 0 ? (
+          <Card style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>No personal savings plans yet</Text>
+            <Text style={styles.emptyText}>Create a target and maturity date to start tracking progress.</Text>
+          </Card>
+        ) : null}
 
-              <View style={styles.txDetails}>
-                <Text style={styles.txTitle}>{tx.title}</Text>
-                <Text style={styles.txMeta}>{tx.meta}</Text>
+        {!loadError && plans.map((plan) => {
+          const saved = Number(plan.saved_amount || 0);
+          const target = Number(plan.target_amount || 0);
+          const progress = target > 0 ? Math.min(100, (saved / target) * 100) : 0;
+          const completed = plan.status === 'completed';
+          const matured = plan.status === 'matured' || completed;
+          return (
+            <Card key={plan.id} style={styles.planCard}>
+              <View style={styles.planHeader}>
+                <View style={styles.planTitleBlock}>
+                  <Text style={styles.planName}>{plan.name}</Text>
+                  <Text style={styles.planSchedule}>
+                    {formatAmount(plan.contribution_amount)} / {plan.frequency.replace('-', ' ')}
+                  </Text>
+                </View>
+                <StatusBadge label={completed ? 'Target reached' : matured ? 'Matured' : 'Tracking'} type={matured ? 'muted' : 'active'} />
               </View>
-
-              <Text style={tx.type === 'debit' ? styles.txAmountDebit : styles.txAmountCredit}>
-                {tx.amount}
+              <View style={styles.balanceRow}>
+                <Text style={styles.savedAmount}>{formatAmount(saved)}</Text>
+                <Text style={styles.targetAmount}>of {formatAmount(target)}</Text>
+              </View>
+              <ProgressBar progress={progress} color="#005B7F" height={8} />
+              <Text style={styles.maturityText}>Target date: {plan.maturity_date}</Text>
+              <Text style={styles.entriesText}>
+                {plan.entries?.length || 0} self-reported {plan.entries?.length === 1 ? 'entry' : 'entries'}
               </Text>
+              {!matured ? (
+                <TouchableOpacity
+                  style={styles.recordButton}
+                  onPress={() => {
+                    setEntryPlan(plan);
+                    setEntryAmount('');
+                    entryKey.current = makeIdempotencyKey();
+                  }}
+                  activeOpacity={0.82}
+                >
+                  <Text style={styles.recordButtonText}>+ Log a completed saving</Text>
+                </TouchableOpacity>
+              ) : null}
             </Card>
-          ))
-        )}
+          );
+        })}
+
+        <Button title="+ Create a savings plan" onPress={() => setShowCreate(true)} style={styles.primaryButton} />
       </ScrollView>
 
-      {/* 1. ADD FUNDS MODAL */}
-      <Modal visible={showAddModal} transparent animationType="slide">
+      <Modal visible={showCreate} transparent animationType="slide" onRequestClose={() => setShowCreate(false)}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalHeader}>Add Funds to Wallet</Text>
-            <Text style={styles.modalSub}>Deposit funds instantly using your linked Ecobank Blaze Account.</Text>
+          <ScrollView contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled">
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Create a plan</Text>
+              <Text style={styles.modalSubtitle}>This creates a tracking plan only; it does not move or lock funds.</Text>
+              <TextEntry label="PLAN NAME" value={name} onChangeText={setName} placeholder="e.g. School fees" />
+              <TextEntry label="SAVINGS TARGET (₦)" value={targetAmount} onChangeText={setTargetAmount} placeholder="100000" keyboardType="decimal-pad" />
+              <TextEntry label="PLANNED CONTRIBUTION (₦)" value={contributionAmount} onChangeText={setContributionAmount} placeholder="10000" keyboardType="decimal-pad" />
 
-            <Text style={styles.inputLabel}>Select or Enter Amount (₦)</Text>
-            <View style={styles.quickAmountRow}>
-              {quickAmounts.map((val) => (
-                <TouchableOpacity
-                  key={val}
-                  style={[styles.quickAmountPill, amountInput === val && styles.quickAmountPillActive]}
-                  onPress={() => setAmountInput(val)}
-                >
-                  <Text style={[styles.quickAmountText, amountInput === val && styles.quickAmountTextActive]}>
-                    ₦{parseInt(val).toLocaleString()}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              <Text style={styles.inputLabel}>SCHEDULE</Text>
+              <View style={styles.frequencyRow}>
+                {['weekly', 'bi-weekly', 'monthly'].map((item) => (
+                  <TouchableOpacity
+                    key={item}
+                    style={[styles.frequencyButton, frequency === item && styles.frequencyButtonActive]}
+                    onPress={() => setFrequency(item)}
+                  >
+                    <Text style={[styles.frequencyText, frequency === item && styles.frequencyTextActive]}>
+                      {item.replace('-', ' ')}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TextEntry label="START DATE (YYYY-MM-DD)" value={startDate} onChangeText={setStartDate} placeholder="2026-10-01" />
+              <TextEntry label="MATURITY DATE (YYYY-MM-DD)" value={maturityDate} onChangeText={setMaturityDate} placeholder="2027-10-01" />
+              <Button title="Save plan" loading={saving} onPress={createPlan} style={styles.primaryButton} />
+              <TouchableOpacity onPress={() => { setShowCreate(false); resetCreateForm(); }} style={styles.cancelButton}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
             </View>
-
-            <TextInput
-              style={styles.amountTextInput}
-              value={amountInput}
-              onChangeText={setAmountInput}
-              keyboardType="number-pad"
-              placeholder="Enter custom amount"
-              placeholderTextColor="#999"
-            />
-
-            <View style={styles.accountSourceBox}>
-              <Text style={styles.accountSourceText}>
-                Source: Ecobank Blaze Account ({blazeAccountNo})
-              </Text>
-            </View>
-
-            <Button
-              title="Deposit via Ecobank Blaze"
-              variant="accent"
-              loading={processing}
-              onPress={handleDeposit}
-              style={{ marginTop: 16 }}
-            />
-
-            <TouchableOpacity style={styles.cancelModalBtn} onPress={() => setShowAddModal(false)}>
-              <Text style={styles.cancelModalBtnText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
 
-      {/* 2. WITHDRAW MODAL */}
-      <Modal visible={showWithdrawModal} transparent animationType="slide">
+      <Modal visible={Boolean(entryPlan)} transparent animationType="slide" onRequestClose={() => setEntryPlan(null)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalHeader}>Withdraw Funds</Text>
-            <Text style={styles.modalSub}>Transfer savings to your verified Ecobank account.</Text>
-
-            <Text style={styles.inputLabel}>Withdrawal Amount (₦)</Text>
-            <TextInput
-              style={styles.amountTextInput}
-              value={amountInput}
-              onChangeText={setAmountInput}
-              keyboardType="number-pad"
-              placeholder="Enter amount"
-              placeholderTextColor="#999"
-            />
-
-            <View style={styles.accountSourceBox}>
-              <Text style={styles.accountSourceText}>
-                Destination: Ecobank Account ({blazeAccountNo})
-              </Text>
-            </View>
-
-            <Button
-              title="Confirm Withdrawal"
-              loading={processing}
-              onPress={handleWithdraw}
-              style={{ marginTop: 16 }}
-            />
-
-            <TouchableOpacity style={styles.cancelModalBtn} onPress={() => setShowWithdrawModal(false)}>
-              <Text style={styles.cancelModalBtnText}>Cancel</Text>
+            <Text style={styles.modalTitle}>Log a saving</Text>
+            <Text style={styles.modalSubtitle}>
+              This is a self-reported record for “{entryPlan?.name}”, not a payment or verified deposit.
+            </Text>
+            <TextEntry label="AMOUNT (₦)" value={entryAmount} onChangeText={setEntryAmount} placeholder="5000" keyboardType="decimal-pad" />
+            <TextEntry label="NOTE (OPTIONAL)" value={entryNote} onChangeText={setEntryNote} placeholder="Add a note" />
+            <Button title="Record entry" loading={saving} onPress={recordEntry} style={styles.primaryButton} />
+            <TouchableOpacity onPress={() => setEntryPlan(null)} style={styles.cancelButton}>
+              <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -311,356 +278,46 @@ export const WalletScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F6F9F9',
-  },
-  container: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 32,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  pageTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#161C20',
-  },
-  pageSubtitle: {
-    fontSize: 12,
-    color: '#737980',
-    marginTop: 2,
-    fontWeight: '500',
-  },
-  bellBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#EFEFEF',
-    shadowColor: '#161C20',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  bellText: {
-    fontSize: 16,
-  },
-  bellDot: {
-    position: 'absolute',
-    top: 9,
-    right: 9,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#E98591',
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-  },
-  walletHeroCard: {
-    backgroundColor: '#005B7F',
-    borderRadius: 22,
-    padding: 22,
-    marginBottom: 20,
-  },
-  walletSub: {
-    fontSize: 13,
-    color: '#BAE6FD',
-    fontWeight: '600',
-  },
-  walletBalance: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginVertical: 12,
-  },
-  heroBtnRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  addFundsBtn: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    flex: 1,
-    marginRight: 8,
-    alignItems: 'center',
-  },
-  addFundsText: {
-    color: '#005B7F',
-    fontWeight: '800',
-    fontSize: 13,
-  },
-  withdrawBtn: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    flex: 1,
-    marginLeft: 8,
-    alignItems: 'center',
-  },
-  withdrawText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: 13,
-  },
-  sectionLabel: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#161C20',
-    marginBottom: 10,
-  },
-  linkedAccountCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 20,
-  },
-  bankIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#E6F3F7',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
-  },
-  bankIconText: {
-    fontSize: 20,
-  },
-  bankDetails: {
-    flex: 1,
-  },
-  bankName: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#161C20',
-  },
-  accBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 3,
-  },
-  accMaskText: {
-    fontSize: 13,
-    color: '#737980',
-    marginRight: 6,
-  },
-  checkBadge: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#29875A',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  copyPill: {
-    backgroundColor: '#E6F3F7',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  copyPillText: {
-    color: '#005B7F',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  historyHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  seeAllText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#005B7F',
-  },
-  txCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 10,
-  },
-  txIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  txIconDebit: {
-    backgroundColor: '#FFF0F2',
-  },
-  txIconCredit: {
-    backgroundColor: '#E6F5EB',
-  },
-  txIconText: {
-    fontSize: 14,
-  },
-  txDetails: {
-    flex: 1,
-  },
-  txTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#161C20',
-  },
-  txMeta: {
-    fontSize: 11,
-    color: '#737980',
-    marginTop: 2,
-  },
-  txAmountDebit: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#D32F2F',
-  },
-  txAmountCredit: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#29875A',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 20, 30, 0.65)',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  modalCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 24,
-  },
-  modalHeader: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#161C20',
-    marginBottom: 4,
-  },
-  modalSub: {
-    fontSize: 12,
-    color: '#737980',
-    marginBottom: 16,
-    lineHeight: 16,
-  },
-  inputLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#161C20',
-    marginBottom: 8,
-  },
-  quickAmountRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 12,
-  },
-  quickAmountPill: {
-    backgroundColor: '#F6F9F9',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    marginRight: 8,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#EFEFEF',
-  },
-  quickAmountPillActive: {
-    backgroundColor: '#005B7F',
-    borderColor: '#005B7F',
-  },
-  quickAmountText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#161C20',
-  },
-  quickAmountTextActive: {
-    color: '#FFFFFF',
-  },
-  amountTextInput: {
-    backgroundColor: '#F6F9F9',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#161C20',
-    borderWidth: 1,
-    borderColor: '#E0E6E8',
-    marginBottom: 12,
-  },
-  accountSourceBox: {
-    backgroundColor: '#E6F3F7',
-    borderRadius: 10,
-    padding: 10,
-  },
-  accountSourceText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#005B7F',
-  },
-  currencyPillHeader: {
-    backgroundColor: '#E6F3F7',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#005B7F',
-  },
-  currencyPillText: {
-    color: '#005B7F',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  emptyCard: {
-    padding: 24,
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    marginTop: 8,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#161C20',
-    marginBottom: 6,
-  },
-  emptySub: {
-    fontSize: 13,
-    color: '#737980',
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  cancelModalBtn: {
-    alignItems: 'center',
-    paddingVertical: 12,
-    marginTop: 6,
-  },
-  cancelModalBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#737980',
-  },
+  safeArea: { flex: 1, backgroundColor: '#F6F9F9' },
+  container: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 36 },
+  header: { marginBottom: 18 },
+  title: { color: '#161C20', fontSize: 24, fontWeight: '800' },
+  subtitle: { color: '#737980', fontSize: 13, marginTop: 4 },
+  totalAmount: { color: '#005B7F', fontSize: 22, fontWeight: '800', marginTop: 12 },
+  noticeCard: { backgroundColor: '#FFF8E6', borderColor: '#F5D98B', borderWidth: 1, padding: 16, marginBottom: 18 },
+  noticeTitle: { color: '#765300', fontSize: 13, fontWeight: '800', marginBottom: 6 },
+  noticeText: { color: '#765300', fontSize: 12, lineHeight: 18 },
+  stateText: { color: '#737980', fontSize: 13, marginBottom: 12 },
+  emptyCard: { padding: 18, marginBottom: 14 },
+  emptyTitle: { color: '#161C20', fontSize: 15, fontWeight: '800', marginBottom: 5 },
+  emptyText: { color: '#737980', fontSize: 12, lineHeight: 18, marginBottom: 12 },
+  planCard: { padding: 16, marginBottom: 14 },
+  planHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 },
+  planTitleBlock: { flex: 1, marginRight: 10 },
+  planName: { color: '#161C20', fontSize: 16, fontWeight: '800' },
+  planSchedule: { color: '#737980', fontSize: 12, marginTop: 4 },
+  balanceRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 8 },
+  savedAmount: { color: '#005B7F', fontSize: 20, fontWeight: '800', marginRight: 6 },
+  targetAmount: { color: '#737980', fontSize: 12 },
+  maturityText: { color: '#737980', fontSize: 11, marginTop: 10 },
+  entriesText: { color: '#737980', fontSize: 11, marginTop: 4 },
+  recordButton: { alignItems: 'center', borderColor: '#005B7F', borderRadius: 12, borderWidth: 1, marginTop: 14, paddingVertical: 11 },
+  recordButtonText: { color: '#005B7F', fontSize: 13, fontWeight: '800' },
+  primaryButton: { backgroundColor: '#005B7F', borderRadius: 16, height: 52, marginTop: 12 },
+  secondaryButton: { backgroundColor: '#005B7F', borderRadius: 14, height: 46 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 20, 30, 0.58)', justifyContent: 'center', paddingHorizontal: 18 },
+  modalScroll: { flexGrow: 1, justifyContent: 'center', paddingVertical: 24 },
+  modalCard: { backgroundColor: '#FFFFFF', borderRadius: 22, padding: 20 },
+  modalTitle: { color: '#161C20', fontSize: 20, fontWeight: '800' },
+  modalSubtitle: { color: '#737980', fontSize: 12, lineHeight: 17, marginTop: 5, marginBottom: 16 },
+  inputBlock: { marginBottom: 12 },
+  inputLabel: { color: '#737980', fontSize: 10, fontWeight: '800', letterSpacing: 0.6, marginBottom: 6, textTransform: 'uppercase' },
+  textInput: { backgroundColor: '#F4F6F8', borderColor: '#E5E8EB', borderRadius: 12, borderWidth: 1, color: '#161C20', fontSize: 14, height: 48, paddingHorizontal: 13 },
+  frequencyRow: { flexDirection: 'row', marginBottom: 14 },
+  frequencyButton: { alignItems: 'center', backgroundColor: '#F0F3F5', borderRadius: 10, flex: 1, marginRight: 5, paddingHorizontal: 4, paddingVertical: 10 },
+  frequencyButtonActive: { backgroundColor: '#005B7F' },
+  frequencyText: { color: '#737980', fontSize: 10, fontWeight: '700', textTransform: 'capitalize' },
+  frequencyTextActive: { color: '#FFFFFF' },
+  cancelButton: { alignItems: 'center', paddingVertical: 13 },
+  cancelText: { color: '#737980', fontSize: 14, fontWeight: '700' },
 });

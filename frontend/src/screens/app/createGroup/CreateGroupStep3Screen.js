@@ -10,22 +10,22 @@ export const CreateGroupStep3Screen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(false);
   const [createdCircle, setCreatedCircle] = useState(null);
 
-  const groupName = groupData.name || 'Yaba Traders Ajo';
-  const contribution = groupData.contribution_amount || '5,000';
-  const frequency = groupData.frequency || 'Weekly';
-  const membersCount = groupData.members_count || 12;
-  const startDate = groupData.start_date || 'September 5, 2026';
+  const groupName = String(groupData.name || '').trim();
+  const contribution = String(groupData.contribution_amount || '');
+  const frequency = groupData.frequency || '';
+  const membersCount = Number(groupData.members_count) || 0;
+  const startDate = groupData.start_date || '';
   const payoutOrder = 'Join order';
 
   // Calculate total pool size
-  const numericContrib = parseFloat(String(contribution).replace(/[^0-9.]/g, '')) || 5000;
+  const numericContrib = Number(contribution.replace(/[^0-9.]/g, '')) || 0;
   const totalPoolSize = `₦${(numericContrib * membersCount).toLocaleString()}`;
 
   const handleShareInvite = async () => {
     if (!createdCircle?.id) return;
     try {
       await Share.share({
-        message: `Join my EcoSaves circle, ${groupName}. Open EcoSaves, choose Groups > Join, and enter this invitation code: ${createdCircle.id}`,
+        message: `Join my EcoSaves circle, ${groupName}. Open EcoSaves, choose Groups > Join, and enter this invitation code: ${createdCircle.invite_code}`,
       });
     } catch {
       Alert.alert('Unable to share', 'Please share the invitation code manually.');
@@ -35,6 +35,11 @@ export const CreateGroupStep3Screen = ({ route, navigation }) => {
   const handleConfirm = async () => {
     if (createdCircle) {
       navigation.getParent()?.navigate('MainTabs', { screen: 'Groups' });
+      return;
+    }
+
+    if (!groupName || numericContrib <= 0 || !membersCount || !frequency || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
+      Alert.alert('Circle details missing', 'Go back and complete each circle setup step before creating it.');
       return;
     }
 
@@ -53,7 +58,7 @@ export const CreateGroupStep3Screen = ({ route, navigation }) => {
     } catch (err) {
       Alert.alert(
         'Circle not created',
-        err.response?.data?.detail || 'Could not create the circle. Check your connection and try again.'
+        err.response?.data?.detail || err.message || 'Could not create the circle. Check your connection and try again.'
       );
     } finally {
       setLoading(false);
@@ -79,11 +84,11 @@ export const CreateGroupStep3Screen = ({ route, navigation }) => {
         <Card style={styles.summaryCard}>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Group Name</Text>
-            <Text style={styles.summaryVal}>{groupName}</Text>
+            <Text style={styles.summaryVal}>{groupName || 'Not set'}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Contribution</Text>
-            <Text style={styles.summaryVal}>₦{contribution} / {frequency}</Text>
+            <Text style={styles.summaryVal}>{numericContrib ? `₦${numericContrib.toLocaleString()} / ${frequency}` : 'Not set'}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Total Pool Size</Text>
@@ -91,11 +96,11 @@ export const CreateGroupStep3Screen = ({ route, navigation }) => {
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Cycle Members</Text>
-            <Text style={styles.summaryVal}>{membersCount} savings slots</Text>
+            <Text style={styles.summaryVal}>{membersCount || '—'} savings slots (including you)</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Start Date</Text>
-            <Text style={styles.summaryVal}>{startDate}</Text>
+            <Text style={styles.summaryVal}>{startDate || 'Not set'}</Text>
           </View>
           <View style={[styles.summaryRow, { borderBottomWidth: 0 }]}>
             <Text style={styles.summaryLabel}>Payout Order</Text>
@@ -111,7 +116,7 @@ export const CreateGroupStep3Screen = ({ route, navigation }) => {
               <Text style={styles.inviteSub}>
                 Share this code with signed-in EcoSaves users. They can enter it from Groups → Join.
               </Text>
-              <Text selectable style={styles.inviteCode}>{createdCircle.id}</Text>
+              <Text selectable style={styles.inviteCode}>{createdCircle.invite_code}</Text>
               <TouchableOpacity style={styles.whatsAppBtn} activeOpacity={0.85} onPress={handleShareInvite}>
                 <Text style={styles.whatsAppIcon}>↗</Text>
                 <Text style={styles.whatsAppBtnText}>Share invitation code</Text>

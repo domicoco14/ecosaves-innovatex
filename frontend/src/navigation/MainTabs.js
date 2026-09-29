@@ -57,7 +57,7 @@ export const MainTabs = () => {
         name="Wallet"
         component={WalletScreen}
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon label="Wallet" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon label="Savings" focused={focused} />,
         }}
       />
       <Tab.Screen

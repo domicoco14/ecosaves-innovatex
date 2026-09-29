@@ -3,11 +3,8 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { MainTabs } from './MainTabs';
 import { GroupDetailScreen } from '../screens/app/GroupDetailScreen';
 import { ContributionHistoryScreen } from '../screens/app/ContributionHistoryScreen';
-import { GroupChatScreen } from '../screens/app/GroupChatScreen';
 import { JoinCircleScreen } from '../screens/app/JoinCircleScreen';
 import { CreateGroupStack } from './CreateGroupStack';
-import { ConnectBlazeScreen } from '../screens/auth/ConnectBlazeScreen';
-import { CreateBlazeAccountScreen } from '../screens/auth/CreateBlazeAccountScreen';
 
 const Stack = createStackNavigator();
 
@@ -31,14 +28,9 @@ export const AppStack = () => {
         options={{ title: 'Group Details' }}
       />
       <Stack.Screen
-        name="GroupChat"
-        component={GroupChatScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
         name="ContributionHistory"
         component={ContributionHistoryScreen}
-        options={{ title: 'Contribution History' }}
+        options={{ title: 'Savings Activity' }}
       />
       <Stack.Screen
         name="CreateGroupStack"
@@ -49,16 +41,6 @@ export const AppStack = () => {
         name="JoinCircle"
         component={JoinCircleScreen}
         options={{ title: 'Join a Circle' }}
-      />
-      <Stack.Screen
-        name="ConnectBlaze"
-        component={ConnectBlazeScreen}
-        options={{ title: 'Link Blaze Account' }}
-      />
-      <Stack.Screen
-        name="CreateBlazeAccount"
-        component={CreateBlazeAccountScreen}
-        options={{ title: 'Create Blaze Account' }}
       />
     </Stack.Navigator>
   );

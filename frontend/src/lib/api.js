@@ -1,8 +1,11 @@
 import axios from 'axios';
 import { tokenStorage } from './tokenStorage';
 
-// Default base URL for EcoSaves FastAPI backend
-const API_BASE_URL = 'https://ecosaves-innovatex.onrender.com/api/v1';
+// Prefer the environment URL so local development and deployed builds can target
+// the backend that has the required database migrations applied.
+const API_BASE_URL = (
+  process.env.EXPO_PUBLIC_API_URL || 'https://ecosaves-innovatex.onrender.com/api/v1'
+).replace(/\/+$/, '');
 
 export const api = axios.create({
   baseURL: API_BASE_URL,

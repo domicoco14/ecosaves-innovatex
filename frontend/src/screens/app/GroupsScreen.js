@@ -7,15 +7,9 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { Button } from '../../components/Button';
 import { ProgressBar } from '../../components/ProgressBar';
 import { AvatarStack } from '../../components/AvatarStack';
-import { useCurrencyStore } from '../../store/currencyStore';
-import { CurrencySelectorModal } from '../../components/CurrencySelectorModal';
 import { api } from '../../lib/api';
 
 export const GroupsScreen = ({ navigation }) => {
-  const selectedCurrency = useCurrencyStore((state) => state.selectedCurrency);
-  const formatAmount = useCurrencyStore((state) => state.formatAmount);
-
-  const [showCurrencyModal, setShowCurrencyModal] = useState(false);
   const [circles, setCircles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -43,7 +37,7 @@ export const GroupsScreen = ({ navigation }) => {
   const renderCircle = (circle, completed = false) => {
     const memberCount = circle.members_count || 0;
     const progress = Math.min(100, Math.round((memberCount / circle.member_limit) * 100));
-    const amount = formatAmount(Number(circle.contribution_amount) || 0);
+    const amount = `₦${(Number(circle.contribution_amount) || 0).toLocaleString()}`;
     const frequency = circle.frequency?.replace('-', ' ') || 'cycle';
     const badge = completed ? 'Completed' : circle.status === 'active' ? 'Active' : 'Forming';
 
@@ -81,8 +75,6 @@ export const GroupsScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <CurrencySelectorModal visible={showCurrencyModal} onClose={() => setShowCurrencyModal(false)} />
-
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         {/* Sleek Top Header Bar */}
         <View style={styles.headerRow}>
@@ -94,16 +86,6 @@ export const GroupsScreen = ({ navigation }) => {
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <TouchableOpacity
-              style={styles.currencyPillHeader}
-              onPress={() => setShowCurrencyModal(true)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.currencyPillText}>
-                {selectedCurrency.flag} {selectedCurrency.code} ▼
-              </Text>
-            </TouchableOpacity>
-
             <TouchableOpacity
               style={styles.newGroupHeaderBtn}
               onPress={() => navigation.navigate('CreateGroupStack')}
@@ -169,20 +151,6 @@ const styles = StyleSheet.create({
     color: '#737980',
     marginTop: 2,
     fontWeight: '500',
-  },
-  currencyPillHeader: {
-    backgroundColor: '#E6F3F7',
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#005B7F',
-    marginRight: 8,
-  },
-  currencyPillText: {
-    color: '#005B7F',
-    fontSize: 12,
-    fontWeight: '800',
   },
   newGroupHeaderBtn: {
     backgroundColor: '#005B7F',

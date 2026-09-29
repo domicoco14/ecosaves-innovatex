@@ -69,7 +69,7 @@ export const GroupDetailScreen = ({ route }) => {
         <Text style={styles.spotlightSub}>
           {myMember
             ? `Estimated payout date: ${formatDate(myMember.payout_date)}`
-            : `Payout positions are assigned in join order. The first date is ${circle?.start_date ? formatDate(circle.start_date) : 'set by the creator'}.`}
+            : `Payout positions are assigned in join order. The schedule begins once all member slots are filled.`}
         </Text>
       </Card>
 
@@ -103,7 +103,7 @@ export const GroupDetailScreen = ({ route }) => {
         </Text>
       )}
       {loadError ? <Text style={styles.errorText}>{loadError}</Text> : null}
-      <Text style={styles.disclaimer}>Payout dates are estimates based on the circle start date and contribution frequency.</Text>
+      <Text style={styles.disclaimer}>Payout dates are estimates based on the circle becoming full, its selected start date, and its contribution frequency. No funds are transferred or guaranteed by this schedule.</Text>
     </ScrollView>
   );
 };

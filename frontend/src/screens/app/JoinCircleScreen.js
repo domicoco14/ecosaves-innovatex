@@ -19,7 +19,7 @@ export const JoinCircleScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
-      const response = await api.post('/circles/join', { circle_id: circleId });
+      const response = await api.post('/circles/join', { invite_code: circleId });
       Alert.alert('You joined the circle', `${response.data.name} has been added to your groups.`, [
         {
           text: 'View circle',

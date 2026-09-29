@@ -1,15 +1,31 @@
 from datetime import date
+from decimal import Decimal
 from typing import Literal
-from uuid import UUID
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+from pydantic import AliasChoices
 
 
 class CircleCreate(BaseModel):
     name: str = Field(min_length=2, max_length=80)
-    contribution_amount: float = Field(gt=0)
+    contribution_amount: Decimal = Field(gt=0, max_digits=14, decimal_places=2)
     frequency: Literal["weekly", "bi-weekly", "monthly"]
     member_limit: int = Field(ge=3, le=30)
     start_date: date
+
+    @field_validator("name")
+    @classmethod
+    def strip_name(cls, value: str) -> str:
+        value = value.strip()
+        if len(value) < 2:
+            raise ValueError("Circle name must contain at least two non-space characters")
+        return value
+
+    @field_validator("start_date")
+    @classmethod
+    def require_current_or_future_start(cls, value: date) -> date:
+        if value < date.today():
+            raise ValueError("Start date cannot be in the past")
+        return value
 
 
 class CircleMemberResponse(BaseModel):
@@ -22,11 +38,13 @@ class CircleMemberResponse(BaseModel):
 
 class CircleResponse(BaseModel):
     id: str
+    invite_code: str
     name: str
-    contribution_amount: float
+    contribution_amount: Decimal
     frequency: str
     member_limit: int
     start_date: date
+    schedule_start_date: date | None = None
     status: str
     created_by: str
     members_count: int
@@ -35,4 +53,8 @@ class CircleResponse(BaseModel):
 
 
 class CircleJoinRequest(BaseModel):
-    circle_id: UUID
+    invite_code: str = Field(
+        min_length=8,
+        max_length=64,
+        validation_alias=AliasChoices("invite_code", "circle_id"),
+    )

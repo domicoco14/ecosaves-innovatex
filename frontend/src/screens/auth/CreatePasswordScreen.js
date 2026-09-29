@@ -79,7 +79,7 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
       return; // backendError is already set in the store, stay on screen
     }
 
-    navigation.navigate('ConnectBlaze');
+    // RootNavigator switches to the authenticated app after signup completes.
   };
 
   const displayedError = validationError || backendError;

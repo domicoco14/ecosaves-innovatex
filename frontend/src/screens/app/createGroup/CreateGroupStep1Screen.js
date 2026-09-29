@@ -5,20 +5,21 @@ import { InputField } from '../../../components/InputField';
 import { Button } from '../../../components/Button';
 
 export const CreateGroupStep1Screen = ({ navigation }) => {
-  const [groupName, setGroupName] = useState('Yaba Traders Ajo');
-  const [contributionAmount, setContributionAmount] = useState('5,000');
-  const [frequency, setFrequency] = useState('Weekly');
-  const [membersCount, setMembersCount] = useState(12);
+  const [groupName, setGroupName] = useState('');
+  const [contributionAmount, setContributionAmount] = useState('');
+  const [frequency, setFrequency] = useState('Monthly');
+  const [membersCount, setMembersCount] = useState(3);
 
   const handleNext = () => {
-    if (!groupName.trim() || !contributionAmount.trim()) {
-      Alert.alert('Missing Info', 'Please enter a group name and contribution amount.');
+    const amount = Number(contributionAmount.replace(/,/g, '').trim());
+    if (groupName.trim().length < 2 || !Number.isFinite(amount) || amount <= 0) {
+      Alert.alert('Check group details', 'Enter a group name and a contribution amount greater than zero.');
       return;
     }
 
     navigation.navigate('CreateGroupStep2', {
       name: groupName.trim(),
-      contribution_amount: contributionAmount,
+      contribution_amount: String(amount),
       frequency,
       members_count: membersCount,
     });

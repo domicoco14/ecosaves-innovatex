@@ -1,54 +1,35 @@
-# ecosaves-innovatex
-Digitizing ajo/esusu group savings through Ecobank Blaze — built for InnovateX 2026 by Team 4Ge
+# EcoSaves
 
-## Backend Overview
+EcoSaves is a savings-circle and personal-savings tracking app. The current app can work without Ecobank Blaze: users sign up, create or join a circle, view its member order and estimated schedule, and track personal savings entries they report themselves.
 
-The backend is a FastAPI service that handles user accounts, savings circles, contributions, and payouts. It talks to Supabase (Postgres) for storage and Resend for email delivery.
+**No bank or wallet funds are held, transferred, debited, locked, or paid out by this version.** Savings-plan entries are user-reported and unverified. Circle schedules are estimates, not payment promises. Do not describe this build as providing custody, guaranteed payouts, interest, or automated banking.
 
-### Tech stack
-- **Framework**: FastAPI
-- **Database**: Supabase (Postgres), accessed via the `supabase-py` client using the service role key
-- **Auth**: Custom JWT-based auth (not Supabase Auth), passwords hashed with bcrypt
-- **Email**: Resend, used for OTP verification codes
-- **Scheduled cleanup**: Supabase's `pg_cron` extension, runs daily jobs to sweep expired data
+## Components
 
-### Project structure
+- `frontend/`: Expo React Native app.
+- `ecosaves-backend/`: FastAPI API with JWT authentication and Supabase Postgres persistence.
+- `ecosaves-backend/supabase/migrations/`: SQL setup and upgrade migrations.
 
-app/
-main.py # App entrypoint, route registration, CORS
-core/
-config.py # Settings loaded from .env
-security.py # Password hashing, JWT creation/verification
-db/
-supabase_client.py # Supabase client setup
-schemas/ # Pydantic request/response models
-services/
-otp_service.py # OTP generation, hashing, verification, rate limiting
-blaze_lock.py # Abstraction over locking funds in a user's Blaze account
-api/routes/
-users.py # Auth, onboarding, account deletion
-circles.py, contributions.py, payouts.py
+## Backend and database setup
 
+1. Configure `ecosaves-backend/.env` from `.env.example` with the Supabase URL, service-role key, JWT secret, and email settings required for signup.
+2. In the Supabase SQL Editor, apply the migrations in order as documented in [the Supabase setup guide](ecosaves-backend/supabase/README.md). The circle and personal-savings APIs depend on the tables, constraints, row-level-security policies, and RPC functions in those files.
+3. Run the FastAPI service from `ecosaves-backend/` with `uvicorn app.main:app --host 0.0.0.0 --port 8000`.
+4. Set `frontend/.env`'s `EXPO_PUBLIC_API_URL` to the reachable backend `/api/v1` URL. A physical phone needs the computer's current LAN IP and the same network; a deployed app needs a public HTTPS backend URL.
+5. Start the app from `frontend/` with `npm start`.
 
-### Onboarding flow
-1. `POST /api/v1/users/signup` — user submits first name, last name, email. A user record is created and a 4-digit OTP is emailed via Resend.
-2. `POST /api/v1/users/verify-otp` — user submits the code. On success, `email_verified` is set to true.
-3. `POST /api/v1/users/set-password` — user sets their password (only allowed after email verification). Stored as a bcrypt hash.
-4. `POST /api/v1/users/login` — returns a JWT access token, used to authenticate all subsequent requests via the `Authorization: Bearer <token>` header.
-5. `POST /api/v1/users/connect-blaze` or `POST /api/v1/users/create-blaze-account` — links or creates the user's Blaze account. **Currently stubbed**, pending confirmation of Ecobank's Blaze API capabilities for InnovateX participants.
+The backend uses a privileged Supabase service key. Keep it server-side; never add it to the Expo app. API routes must derive the user from the verified EcoSaves JWT and scope database reads/writes to that user.
 
-### OTP security
-OTP codes are never stored in plaintext, only their SHA-256 hash. Codes expire after 5 minutes, allow a maximum of 5 verification attempts before being invalidated, and are single-use. A rate limit caps how many OTPs a single email can request per hour, to prevent abuse. Expired OTP rows are automatically deleted daily (kept for 3 days after expiry first, to allow abuse pattern review).
+## Current API capabilities
 
-### Account deletion
-Deletion is a two-stage process rather than an immediate hard delete, to preserve an audit trail while still protecting user privacy:
-1. `DELETE /api/v1/users/me` — soft-deletes the account (`deleted_at` timestamp set). The account can no longer log in, and the email becomes available again for a fresh signup.
-2. After 30 days, a scheduled job anonymizes the row (name, email, password hash, and Blaze link are wiped/replaced), while keeping the row itself intact for any circles/contributions/payouts tied to it. The exact long-term retention period beyond that is still being confirmed against applicable financial data retention requirements.
+- Email OTP signup and login.
+- Authenticated circle create/list/detail/join, with creators counted as members and joins assigned in order.
+- Unique invitation codes; only circle members can read private circle details.
+- Derived estimated payout dates after the circle fills.
+- Authenticated personal savings goals and idempotent, self-reported savings entries.
 
-### Fund locking (Blaze integration)
-Whether EcoSaves can place a real hold/lien on funds inside a user's own Blaze account depends on what Ecobank's Blaze API exposes to InnovateX participants, this is still unconfirmed. To avoid blocking development, the locking logic is isolated behind an interface in `app/services/blaze_lock.py`. A mock implementation currently simulates success so the rest of the app (circles, contributions, payouts) can be built and demoed without waiting on it. Once the real endpoint is confirmed, only this file needs to change.
+Contributions, disbursements, payment verification, a cash wallet, and enforced maturity locks are not implemented. Blaze linking/account creation is intentionally not part of the current client flow until a verified integration is available.
 
-### Setup
-See `ecosaves-backend/README.md` for local setup instructions (Windows/VS Code).
+## Before production launch
 
-Adjust the last line's path if your backend folder ends up named differently, or if you want the setup steps duplicated here instead of linked.
+Apply and verify the Supabase migrations, configure a stable HTTPS API URL, rotate any credentials that have ever been committed or shared, test with separate user accounts, and review authentication, privacy, backup/recovery, legal, and operational requirements. The screens and bundle builds alone do not establish that the live Supabase deployment is ready.
