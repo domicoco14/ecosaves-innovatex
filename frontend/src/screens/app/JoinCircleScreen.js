@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/Button';
@@ -7,17 +7,52 @@ import { InputField } from '../../components/InputField';
 import { api } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 
+const extractInviteSlug = (value) => {
+  const input = value.trim();
+  const match = input.match(/(?:https?:\/\/)?(?:www\.)?ecosaves\.app\/join\/([a-z0-9-]+)|ecosaves:\/\/join\/([a-z0-9-]+)/i);
+  const raw = (match?.[1] || match?.[2] || input).split(/[?#]/)[0].trim().toLowerCase();
+  return raw.replace(/\/+$/, '');
+};
+
 export const JoinCircleScreen = ({ route, navigation }) => {
   const [circleCode, setCircleCode] = useState(route.params?.inviteCode || '');
+  const [invitePreview, setInvitePreview] = useState(null);
+  const [previewError, setPreviewError] = useState('');
   const [loading, setLoading] = useState(false);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const setPendingInviteCode = useAuthStore((state) => state.setPendingInviteCode);
   const clearPendingInviteCode = useAuthStore((state) => state.clearPendingInviteCode);
 
+  useEffect(() => {
+    const inviteSlug = route.params?.inviteCode;
+    if (inviteSlug) {
+      const normalized = extractInviteSlug(inviteSlug);
+      setCircleCode(normalized);
+      loadInvitePreview(normalized);
+    }
+  }, [route.params?.inviteCode]);
+
+  const loadInvitePreview = async (rawCode = circleCode) => {
+    const inviteSlug = extractInviteSlug(rawCode);
+    if (!(/^[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{32}$/.test(inviteSlug) || /^[0-9a-f]{32}$/.test(inviteSlug))) {
+      setPreviewError('Enter a valid EcoSaves invitation link or code.');
+      return;
+    }
+    setLoading(true);
+    setPreviewError('');
+    try {
+      const response = await api.get(`/circles/invites/${encodeURIComponent(inviteSlug)}`);
+      setInvitePreview({ ...response.data, invite_slug: inviteSlug });
+    } catch (err) {
+      setInvitePreview(null);
+      setPreviewError(err.response?.data?.detail || 'Invitation not found or no longer available.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleJoin = async () => {
-    const inviteInput = circleCode.trim();
-    const urlMatch = inviteInput.match(/(?:https:\/\/ecosaves\.app\/join\/|ecosaves:\/\/join\/)([a-z0-9-]+)/i);
-    const inviteCode = (urlMatch?.[1] || inviteInput).trim().toLowerCase();
+    const inviteCode = invitePreview?.invite_slug || extractInviteSlug(circleCode);
     if (!inviteCode) {
       Alert.alert('Invitation code required', 'Enter the code shared by the circle creator.');
       return;
@@ -25,6 +60,7 @@ export const JoinCircleScreen = ({ route, navigation }) => {
 
     if (!isAuthenticated) {
       setPendingInviteCode(inviteCode);
+      navigation.setParams({ inviteCode });
       Alert.alert('Sign in to join', 'You need an EcoSaves account to join this circle.', [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Sign in', onPress: () => navigation.navigate('Login') },
@@ -33,10 +69,21 @@ export const JoinCircleScreen = ({ route, navigation }) => {
       return;
     }
 
+    if (!invitePreview) {
+      await loadInvitePreview(circleCode);
+      return;
+    }
+
+    if (invitePreview.status !== 'forming' || invitePreview.members_count >= invitePreview.member_limit) {
+      Alert.alert('Circle unavailable', 'This circle is already full or is no longer accepting members.');
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await api.post('/circles/join', { invite_code: inviteCode });
       clearPendingInviteCode();
+      setCircleCode('');
       Alert.alert('You joined the circle', `${response.data.name} has been added to your groups.`, [
         {
           text: 'View circle',
@@ -55,7 +102,7 @@ export const JoinCircleScreen = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <Text style={styles.title}>Join a circle</Text>
         <Text style={styles.subtitle}>Open a shared EcoSaves invite link or enter the invitation code from the circle creator.</Text>
@@ -71,12 +118,36 @@ export const JoinCircleScreen = ({ route, navigation }) => {
           <InputField
             label="INVITATION CODE"
             value={circleCode}
-            onChangeText={setCircleCode}
+            onChangeText={(value) => {
+              setCircleCode(value);
+              setInvitePreview(null);
+              setPreviewError('');
+            }}
             placeholder="Paste invitation link or code"
             autoCapitalize="none"
             autoCorrect={false}
           />
-          <Button title="Join circle" loading={loading} onPress={handleJoin} style={styles.button} />
+          {!invitePreview ? (
+            <Button title="Review invitation" loading={loading} onPress={() => loadInvitePreview()} style={styles.button} />
+          ) : (
+            <View style={styles.preview}>
+              <Text style={styles.previewEyebrow}>CIRCLE INVITATION</Text>
+              <Text style={styles.previewTitle}>{invitePreview.name}</Text>
+              <Text style={styles.previewText}>
+                ₦{Number(invitePreview.contribution_amount).toLocaleString()} / {invitePreview.frequency.replace('-', ' ')}
+              </Text>
+              <Text style={styles.previewText}>
+                {invitePreview.members_count} of {invitePreview.member_limit} member slots filled
+              </Text>
+              <Button
+                title={isAuthenticated ? 'Join circle' : 'Sign in to join'}
+                loading={loading}
+                onPress={handleJoin}
+                style={styles.button}
+              />
+            </View>
+          )}
+          {previewError ? <Text style={styles.errorText}>{previewError}</Text> : null}
         </Card>
       </ScrollView>
       </KeyboardAvoidingView>
@@ -131,4 +202,16 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     height: 52,
   },
+  preview: {
+    backgroundColor: '#F6F9F9',
+    borderColor: '#E5ECEF',
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 8,
+    padding: 14,
+  },
+  previewEyebrow: { color: '#737980', fontSize: 10, fontWeight: '800', letterSpacing: 0.7 },
+  previewTitle: { color: '#161C20', fontSize: 17, fontWeight: '800', marginTop: 5 },
+  previewText: { color: '#737980', fontSize: 12, marginTop: 5, textTransform: 'capitalize' },
+  errorText: { color: '#B42318', fontSize: 12, lineHeight: 17, marginTop: 12 },
 });

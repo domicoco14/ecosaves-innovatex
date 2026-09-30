@@ -58,11 +58,11 @@ export const HomeScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.statsRow}>
-          <Card style={styles.statCard}>
+          <Card style={[styles.statCard, { marginRight: 6 }]}>
             <Text style={styles.statValue}>{loading ? '—' : circles.length}</Text>
             <Text style={styles.statLabel}>Circles</Text>
           </Card>
-          <Card style={styles.statCard}>
+          <Card style={[styles.statCard, { marginLeft: 6 }]}>
             <Text style={styles.statValue}>{loading ? '—' : plans.length}</Text>
             <Text style={styles.statLabel}>Savings plans</Text>
           </Card>
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   name: { color: '#161C20', fontSize: 18, fontWeight: '800', marginTop: 2 },
   profileLink: { color: '#005B7F', fontSize: 13, fontWeight: '800' },
   statsRow: { flexDirection: 'row', marginBottom: 14 },
-  statCard: { alignItems: 'center', flex: 1, marginRight: 8, padding: 12 },
+  statCard: { alignItems: 'center', flex: 1, padding: 12 },
   statValue: { color: '#005B7F', fontSize: 18, fontWeight: '800' },
   statLabel: { color: '#737980', fontSize: 11, marginTop: 3 },
   savingsCard: { backgroundColor: '#005B7F', marginBottom: 24, padding: 20 },

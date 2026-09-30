@@ -42,7 +42,7 @@ const TextEntry = ({ label, value, onChangeText, placeholder, keyboardType = 'de
   </View>
 );
 
-export const WalletScreen = () => {
+export const WalletScreen = ({ navigation }) => {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -144,6 +144,10 @@ export const WalletScreen = () => {
   };
 
   const totalReported = plans.reduce((total, plan) => total + Number(plan.saved_amount || 0), 0);
+  const recentEntries = plans
+    .flatMap((plan) => (plan.entries || []).map((entry) => ({ ...entry, planName: plan.name })))
+    .sort((left, right) => new Date(right.created_at) - new Date(left.created_at))
+    .slice(0, 3);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -249,13 +253,42 @@ export const WalletScreen = () => {
           );
         })}
 
+        <View style={styles.activityHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>Transaction history</Text>
+            <Text style={styles.sectionSubtitle}>Only your saved tracking entries</Text>
+          </View>
+          {recentEntries.length > 0 ? (
+            <TouchableOpacity onPress={() => navigation.navigate('ContributionHistory')}>
+              <Text style={styles.historyLink}>See all</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+        {recentEntries.length === 0 ? (
+          <Card style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>No savings activity yet</Text>
+            <Text style={styles.emptyText}>Real wallet transactions will appear only after a verified payment provider is connected.</Text>
+          </Card>
+        ) : recentEntries.map((entry) => (
+          <Card key={entry.id} style={styles.transactionCard}>
+            <View style={styles.transactionIcon}><Text style={styles.transactionIconText}>＋</Text></View>
+            <View style={styles.transactionDetails}>
+              <Text style={styles.transactionTitle}>{entry.planName}</Text>
+              <Text style={styles.transactionMeta}>
+                Self-reported · {new Date(entry.created_at).toLocaleDateString()}
+              </Text>
+            </View>
+            <Text style={styles.transactionAmount}>{formatAmount(entry.amount)}</Text>
+          </Card>
+        ))}
+
         <Button title="+ Create a savings plan" onPress={() => setShowCreate(true)} style={styles.primaryButton} />
       </ScrollView>
 
       <Modal visible={showCreate} transparent animationType="slide" onRequestClose={() => setShowCreate(false)}>
         <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <ScrollView contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled">
+          <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
             <View style={styles.modalCard}>
               <Text style={styles.modalTitle}>Create a plan</Text>
               <Text style={styles.modalSubtitle}>This creates a tracking plan only; it does not move or lock funds.</Text>
@@ -291,7 +324,8 @@ export const WalletScreen = () => {
 
       <Modal visible={Boolean(entryPlan)} transparent animationType="slide" onRequestClose={() => setEntryPlan(null)}>
         <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Log a saving</Text>
             <Text style={styles.modalSubtitle}>
@@ -304,6 +338,7 @@ export const WalletScreen = () => {
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
+          </ScrollView>
           </KeyboardAvoidingView>
         </View>
       </Modal>
@@ -338,6 +373,14 @@ const styles = StyleSheet.create({
   activityHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
   sectionTitle: { color: '#161C20', fontSize: 18, fontWeight: '800' },
   sectionSubtitle: { color: '#737980', fontSize: 11, marginTop: 3 },
+  historyLink: { color: '#005B7F', fontSize: 12, fontWeight: '800' },
+  transactionCard: { alignItems: 'center', flexDirection: 'row', marginBottom: 10, padding: 13 },
+  transactionIcon: { alignItems: 'center', backgroundColor: '#E6F5EB', borderRadius: 18, height: 36, justifyContent: 'center', marginRight: 10, width: 36 },
+  transactionIconText: { color: '#29875A', fontSize: 19, fontWeight: '800' },
+  transactionDetails: { flex: 1 },
+  transactionTitle: { color: '#161C20', fontSize: 12, fontWeight: '800' },
+  transactionMeta: { color: '#737980', fontSize: 10, marginTop: 3 },
+  transactionAmount: { color: '#29875A', fontSize: 13, fontWeight: '800' },
   noticeCard: { backgroundColor: '#FFF8E6', borderColor: '#F5D98B', borderWidth: 1, padding: 16, marginBottom: 18 },
   noticeTitle: { color: '#765300', fontSize: 13, fontWeight: '800', marginBottom: 6 },
   noticeText: { color: '#765300', fontSize: 12, lineHeight: 18 },
