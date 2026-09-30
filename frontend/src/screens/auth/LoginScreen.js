@@ -84,7 +84,7 @@ export const LoginScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />
-      <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <View style={styles.content}>
           <EcoSavesLogo variant="badge" />
@@ -142,7 +142,7 @@ export const LoginScreen = ({ navigation }) => {
           {/* Bottom Security Footer */}
           <View style={styles.securityFooter}>
             <Text style={styles.securityFooterText}>
-              256-Bit SSL Encrypted • Ecobank Pan-African Network Partner
+              Your EcoSaves account is protected by secure sign-in
             </Text>
           </View>
         </View>

@@ -9,12 +9,14 @@ export const useAuthStore = create(
     (set, get) => ({
       user: null,
       isAuthenticated: false,
+      hasHydrated: false,
       isLoading: false,
       error: null,
       verificationToken: null, // holds the short-lived token between verify-otp and complete-signup
       pendingInviteCode: null,
       setPendingInviteCode: (pendingInviteCode) => set({ pendingInviteCode }),
       clearPendingInviteCode: () => set({ pendingInviteCode: null }),
+      setHasHydrated: (hasHydrated) => set({ hasHydrated }),
 
       /**
        * Request OTP action — calls FastAPI POST /users/request-otp
@@ -247,7 +249,11 @@ export const useAuthStore = create(
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         user: state.user,
+        pendingInviteCode: state.pendingInviteCode,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

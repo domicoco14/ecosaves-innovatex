@@ -32,8 +32,8 @@ export const OnboardingScreen = ({ navigation }) => {
               Save together,{'\n'}the digitized ajo way
             </Text>
             <Text style={styles.subheadline}>
-              Join an ajo/esusu group, contribute automatically via Ecobank
-              Blaze, and get paid out on your turn. No cash, no wahala.
+              Create or join an ajo/esusu circle, see your contribution plan,
+              and follow your turn in the rotation. Simple savings, together.
             </Text>
           </View>
 
@@ -110,8 +110,6 @@ const styles = StyleSheet.create({
   primaryBtn: {
     width: '100%',
     backgroundColor: '#00587E',
-    borderRadius: 15,
-    height: 56,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,

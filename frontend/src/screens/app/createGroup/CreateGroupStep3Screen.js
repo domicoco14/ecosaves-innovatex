@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Share, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Share, KeyboardAvoidingView, Platform, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { api } from '../../../lib/api';
+import * as Clipboard from 'expo-clipboard';
 
 export const CreateGroupStep3Screen = ({ route, navigation }) => {
   const groupData = route.params || {};
   const [loading, setLoading] = useState(false);
   const [createdCircle, setCreatedCircle] = useState(null);
+  const [copied, setCopied] = useState(false);
 
   const groupName = String(groupData.name || '').trim();
   const contribution = String(groupData.contribution_amount || '');
@@ -26,14 +28,28 @@ export const CreateGroupStep3Screen = ({ route, navigation }) => {
 
   const handleShareInvite = async () => {
     if (!createdCircle?.invite_slug) return;
+    const message = `Join my EcoSaves circle, ${groupName}: ${inviteUrl}\n\nIf the link does not open the app, sign in, choose Groups → Join, and enter: ${createdCircle.invite_slug}`;
     try {
-      await Share.share({
-        title: `Join ${groupName} on EcoSaves`,
-        message: `Join my EcoSaves circle, ${groupName}: ${inviteUrl}\n\nIf the link does not open the app, sign in, choose Groups → Join, and enter: ${createdCircle.invite_slug}`,
-      });
+      const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
+      if (await Linking.canOpenURL(whatsappUrl)) {
+        await Linking.openURL(whatsappUrl);
+        return;
+      }
     } catch {
-      Alert.alert('Unable to share', 'Please share the invitation code manually.');
+      // Fall through to the system share sheet.
     }
+    try {
+      await Share.share({ title: `Join ${groupName} on EcoSaves`, message });
+    } catch {
+      Alert.alert('Unable to share', 'Please copy the invitation link and share it manually.');
+    }
+  };
+
+  const handleCopyInvite = async () => {
+    if (!inviteUrl) return;
+    await Clipboard.setStringAsync(inviteUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleConfirm = async () => {
@@ -71,7 +87,7 @@ export const CreateGroupStep3Screen = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {/* Deep Teal Step Header */}
       <View style={styles.stepHeader}>
         <View style={styles.stepHeaderTop}>
@@ -123,14 +139,14 @@ export const CreateGroupStep3Screen = ({ route, navigation }) => {
               </Text>
               <View style={styles.linkBox}>
                 <Text selectable style={styles.linkText} numberOfLines={1}>{inviteUrl}</Text>
-                <TouchableOpacity style={styles.copyBtn} activeOpacity={0.85} onPress={handleShareInvite}>
-                  <Text style={styles.copyBtnText}>Copy / Share</Text>
+                <TouchableOpacity style={styles.copyBtn} activeOpacity={0.85} onPress={handleCopyInvite}>
+                  <Text style={styles.copyBtnText}>{copied ? 'Copied!' : 'Copy'}</Text>
                 </TouchableOpacity>
               </View>
               <Text selectable style={styles.inviteCode}>Invite code: {createdCircle.invite_slug}</Text>
               <TouchableOpacity style={styles.whatsAppBtn} activeOpacity={0.85} onPress={handleShareInvite}>
                 <Text style={styles.whatsAppIcon}>↗</Text>
-                <Text style={styles.whatsAppBtnText}>Share invitation link</Text>
+                <Text style={styles.whatsAppBtnText}>Share via WhatsApp</Text>
               </TouchableOpacity>
             </>
           ) : (

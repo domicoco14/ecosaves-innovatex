@@ -24,7 +24,8 @@ The backend uses a privileged Supabase service key. Keep it server-side; never a
 
 - Email OTP signup and login.
 - Authenticated circle create/list/detail/join, with creators counted as members and joins assigned in order.
-- Unique invitation codes; only circle members can read private circle details.
+- Unique, readable circle invitation links with a preview before joining; only members can read private circle details and chat.
+- Persisted member-only circle chat with polling updates.
 - Derived estimated payout dates after the circle fills.
 - Authenticated personal savings goals and idempotent, self-reported savings entries.
 

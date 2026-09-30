@@ -6,13 +6,16 @@ import { VerifyEmailScreen } from '../screens/auth/VerifyEmailScreen';
 import { CreatePasswordScreen } from '../screens/auth/CreatePasswordScreen';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { JoinCircleScreen } from '../screens/app/JoinCircleScreen';
+import { useAuthStore } from '../store/authStore';
 
 const Stack = createStackNavigator();
 
 export const AuthStack = () => {
+  const pendingInviteCode = useAuthStore((state) => state.pendingInviteCode);
+
   return (
     <Stack.Navigator
-      initialRouteName="Onboarding"
+      initialRouteName={pendingInviteCode ? 'JoinCircle' : 'Onboarding'}
       screenOptions={{
         headerStyle: { backgroundColor: '#F6F9F9', elevation: 0, shadowOpacity: 0 },
         headerTitleStyle: { fontWeight: '700', color: '#161C20' },
@@ -48,6 +51,7 @@ export const AuthStack = () => {
         name="JoinCircle"
         component={JoinCircleScreen}
         options={{ title: 'Join a Circle' }}
+        initialParams={pendingInviteCode ? { inviteCode: pendingInviteCode } : undefined}
       />
     </Stack.Navigator>
   );

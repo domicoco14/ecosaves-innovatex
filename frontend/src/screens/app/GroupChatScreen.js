@@ -26,6 +26,7 @@ export const GroupChatScreen = ({ route, navigation }) => {
   const [sending, setSending] = useState(false);
   const [loadError, setLoadError] = useState('');
   const listRef = useRef(null);
+  const nearBottomRef = useRef(true);
 
   const loadMessages = useCallback(async (showLoading = false) => {
     if (!circle.id) {
@@ -36,7 +37,11 @@ export const GroupChatScreen = ({ route, navigation }) => {
     if (showLoading) setLoading(true);
     try {
       const response = await api.get(`/circles/${circle.id}/messages`);
-      setMessages(response.data);
+      setMessages((current) => {
+        const combined = new Map(current.map((message) => [message.id, message]));
+        response.data.forEach((message) => combined.set(message.id, message));
+        return [...combined.values()].sort((left, right) => new Date(left.created_at) - new Date(right.created_at));
+      });
       setLoadError('');
     } catch (err) {
       setLoadError(err.response?.data?.detail || 'Could not load circle messages.');
@@ -69,7 +74,7 @@ export const GroupChatScreen = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.chatHeader}>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Text style={styles.backText}>‹</Text>
@@ -96,7 +101,14 @@ export const GroupChatScreen = ({ route, navigation }) => {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.messageList}
             keyboardShouldPersistTaps="handled"
-            onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+            onScroll={(event) => {
+              const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+              nearBottomRef.current = contentSize.height - (contentOffset.y + layoutMeasurement.height) < 100;
+            }}
+            scrollEventThrottle={200}
+            onContentSizeChange={() => {
+              if (nearBottomRef.current) listRef.current?.scrollToEnd({ animated: false });
+            }}
             renderItem={({ item }) => {
               const isMine = item.user_id === user?.id;
               return (

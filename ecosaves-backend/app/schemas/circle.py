@@ -33,7 +33,17 @@ class CircleMemberResponse(BaseModel):
     first_name: str
     last_name: str
     payout_position: int
-    payout_date: date
+    payout_date: date | None = None
+
+
+class CircleInvitePreview(BaseModel):
+    name: str
+    contribution_amount: Decimal
+    frequency: str
+    member_limit: int
+    members_count: int
+    start_date: date
+    status: str
 
 
 class CircleResponse(BaseModel):

@@ -6,6 +6,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from app.core.config import settings
+from app.db.supabase_client import get_supabase
 
 bearer_scheme = HTTPBearer()
 
@@ -33,7 +34,6 @@ def decode_access_token(token: str) -> dict:
             detail="Invalid or expired token",
         )
 
-
 def get_current_user_id(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
 ) -> str:
@@ -41,6 +41,16 @@ def get_current_user_id(
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+    current_user = (
+        get_supabase().table("users")
+        .select("id, deleted_at")
+        .eq("id", user_id)
+        .limit(1)
+        .execute()
+    )
+    if not current_user.data or current_user.data[0].get("deleted_at") is not None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Account is unavailable")
     return user_id
 
 def create_email_verification_token(email: str) -> str:

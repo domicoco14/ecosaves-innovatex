@@ -10,8 +10,9 @@ router = APIRouter()
 
 def _plan_response(plan: dict, entries: list[dict] | None = None) -> SavingsPlanResponse:
     plan_entries = entries or []
+    response_status = plan["status"]
     if plan.get("status") == "active" and plan.get("maturity_date") and str(plan["maturity_date"])[:10] <= date.today().isoformat():
-        plan["status"] = "matured"
+        response_status = "matured"
     return SavingsPlanResponse(
         id=plan["id"],
         name=plan["name"],
@@ -20,7 +21,7 @@ def _plan_response(plan: dict, entries: list[dict] | None = None) -> SavingsPlan
         frequency=plan["frequency"],
         start_date=plan["start_date"],
         maturity_date=plan["maturity_date"],
-        status=plan["status"],
+        status=response_status,
         saved_amount=plan["saved_amount"],
         entries=plan_entries,
     )
@@ -82,6 +83,8 @@ def add_savings_entry(
     payload: SavingsEntryCreate,
     user_id: str = Depends(get_current_user_id),
 ):
+    if payload.amount <= 0:
+        raise HTTPException(status_code=422, detail="Entry amount must be greater than zero")
     try:
         result = get_supabase().rpc("record_personal_savings_entry", {
             "p_goal_id": goal_id,

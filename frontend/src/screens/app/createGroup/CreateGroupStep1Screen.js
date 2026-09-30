@@ -27,7 +27,7 @@ export const CreateGroupStep1Screen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {/* Deep Teal Step Header */}
       <View style={styles.stepHeader}>
         <View style={styles.stepHeaderTop}>

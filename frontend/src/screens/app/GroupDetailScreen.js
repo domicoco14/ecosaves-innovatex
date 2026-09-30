@@ -75,7 +75,9 @@ export const GroupDetailScreen = ({ route, navigation }) => {
         </Text>
         <Text style={styles.spotlightSub}>
           {myMember
-            ? `Estimated payout date: ${formatDate(myMember.payout_date)}`
+            ? (myMember.payout_date
+              ? `Estimated payout date: ${formatDate(myMember.payout_date)}`
+              : 'Payout dates will appear after the circle is full.')
             : `Payout positions are assigned in join order. The schedule begins once all member slots are filled.`}
         </Text>
       </Card>
@@ -98,7 +100,9 @@ export const GroupDetailScreen = ({ route, navigation }) => {
               <Text style={[styles.memberName, isCurrentUser && styles.memberNameUser]}>
                 {`${member.first_name} ${member.last_name}`.trim() || 'Circle member'}{isCurrentUser ? ' (You)' : ''}
               </Text>
-              <Text style={styles.memberDate}>Estimated: {formatDate(member.payout_date)}</Text>
+              <Text style={styles.memberDate}>
+                {member.payout_date ? `Estimated: ${formatDate(member.payout_date)}` : 'Date set when circle fills'}
+              </Text>
             </View>
           </View>
         );

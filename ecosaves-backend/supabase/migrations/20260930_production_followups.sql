@@ -8,7 +8,7 @@ alter table public.circles
     alter column invite_code set default lower(replace(gen_random_uuid()::text, '-', ''));
 
 update public.circles
-set invite_code = lower(replacc e(gen_random_uuid()::text, '-', ''))
+set invite_code = lower(replace(gen_random_uuid()::text, '-', ''))
 where invite_code is null or length(invite_code) <> 32;
 
 alter table public.circles
@@ -114,6 +114,7 @@ begin
     select * into target_circle
     from public.circles
     where invite_code = lower(trim(p_invite_code))
+          and status = 'forming'
     for update;
 
     if not found then
@@ -207,6 +208,9 @@ begin
 
     if not found then
         raise exception 'goal_not_found';
+    end if;
+    if p_amount is null or p_amount <= 0 then
+        raise exception 'invalid_amount';
     end if;
     if target_goal.start_date > current_date then
         raise exception 'goal_not_started';

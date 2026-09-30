@@ -8,7 +8,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.security import get_current_user_id
 from app.db.supabase_client import get_supabase
-from app.schemas.circle import CircleCreate, CircleJoinRequest, CircleMemberResponse, CircleResponse
+from app.schemas.circle import (
+    CircleCreate,
+    CircleInvitePreview,
+    CircleJoinRequest,
+    CircleMemberResponse,
+    CircleResponse,
+)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -68,7 +74,11 @@ def _circle_response(circle: dict, user_id: str) -> CircleResponse:
             first_name=profile.get("first_name", "Member"),
             last_name=profile.get("last_name", ""),
             payout_position=position,
-            payout_date=_payout_date(schedule_start_date, circle["frequency"], position),
+            payout_date=(
+                _payout_date(schedule_start_date, circle["frequency"], position)
+                if circle["status"] == "active"
+                else None
+            ),
         ))
 
     return CircleResponse(
@@ -151,12 +161,46 @@ def get_circle(circle_id: UUID, user_id: str = Depends(get_current_user_id)):
     return _circle_response(result.data[0], user_id)
 
 
+@router.get("/invites/{invite_slug}", response_model=CircleInvitePreview)
+def preview_circle_invite(invite_slug: str):
+    normalized_invite = invite_slug.lower()
+    is_legacy_code = re.fullmatch(r"[0-9a-f]{32}", normalized_invite)
+    is_readable_slug = re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{32}", normalized_invite)
+    if not (is_legacy_code or is_readable_slug):
+        raise HTTPException(status_code=404, detail="Invitation not found")
+
+    query = get_supabase().table("circles").select(
+        "id, name, contribution_amount, frequency, member_limit, start_date, status, invite_slug"
+    )
+    query = query.eq("invite_code", normalized_invite) if is_legacy_code else query.eq("invite_slug", normalized_invite)
+    result = query.limit(1).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Invitation not found")
+
+    circle = result.data[0]
+    members = (
+        get_supabase().table("circle_members")
+        .select("id", count="exact")
+        .eq("circle_id", circle["id"])
+        .execute()
+    )
+    return CircleInvitePreview(
+        name=circle["name"],
+        contribution_amount=circle["contribution_amount"],
+        frequency=circle["frequency"],
+        member_limit=circle["member_limit"],
+        members_count=members.count if members.count is not None else len(members.data or []),
+        start_date=circle["start_date"],
+        status=circle["status"],
+    )
+
+
 @router.post("/join", status_code=status.HTTP_200_OK)
 def join_circle(payload: CircleJoinRequest, user_id: str = Depends(get_current_user_id)):
     supabase = get_supabase()
     invite_code = payload.invite_code.strip().lower()
     is_legacy_code = re.fullmatch(r"[0-9a-f]{32}", invite_code)
-    is_readable_slug = re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", invite_code)
+    is_readable_slug = re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{32}", invite_code)
     if not (is_legacy_code or is_readable_slug):
         raise HTTPException(status_code=404, detail="Invitation code not found")
     try:

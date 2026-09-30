@@ -67,7 +67,7 @@ class FakeSupabase:
         self.circle = {
             "id": "circle-1",
             "invite_code": "a" * 32,
-            "invite_slug": "test-circle-0123456789abcdef",
+            "invite_slug": "test-circle-0123456789abcdef0123456789abcdef",
             "name": "Test circle",
             "contribution_amount": "1250.50",
             "frequency": "monthly",
@@ -157,7 +157,7 @@ class CircleAndSavingsSchemaTests(unittest.TestCase):
         self.assertEqual(result.members_count, 1)
         self.assertEqual(result.my_payout_position, 1)
         self.assertEqual(result.invite_code, "a" * 32)
-        self.assertEqual(result.invite_slug, "test-circle-0123456789abcdef")
+        self.assertEqual(result.invite_slug, "test-circle-0123456789abcdef0123456789abcdef")
 
     def test_inactive_circle_does_not_publish_a_schedule_start(self):
         fake = FakeSupabase()

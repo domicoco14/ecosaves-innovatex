@@ -75,7 +75,7 @@ export const CreateGroupStep2Screen = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {/* Deep Teal Step Header */}
       <View style={styles.stepHeader}>
         <View style={styles.stepHeaderTop}>
@@ -92,7 +92,7 @@ export const CreateGroupStep2Screen = ({ route, navigation }) => {
         <View style={styles.infoCard}>
           <Text style={styles.infoIcon}>ℹ️</Text>
           <Text style={styles.infoText}>
-            The creator is included in the member limit. Payout positions are assigned in join order.
+            The creator is included in the member limit. Payout positions are assigned in join order; estimated dates start after all slots are filled.
           </Text>
         </View>
 
@@ -105,7 +105,7 @@ export const CreateGroupStep2Screen = ({ route, navigation }) => {
         />
 
         {/* PREVIEW ROTATION TIMELINE */}
-        <Text style={styles.fieldLabel}>ESTIMATED PAYOUT DATES · JOIN ORDER</Text>
+        <Text style={styles.fieldLabel}>ESTIMATED PAYOUT DATES ONCE FULL · JOIN ORDER</Text>
         <Card style={styles.timelineCard}>
           {previewTimeline.map((item, index) => (
             <View
