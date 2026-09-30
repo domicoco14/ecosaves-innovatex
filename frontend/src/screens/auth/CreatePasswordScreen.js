@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, StatusBar, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EcoSavesLogo } from '../../components/EcoSavesLogo';
-import { InputField } from '../../components/InputField';
+import { PINInput } from '../../components/PINInput';
 import { Button } from '../../components/Button';
 import { useAuthStore } from '../../store/authStore';
 
@@ -30,12 +30,11 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
     [password]
   );
   const allRulesPassed = ruleResults.every((rule) => rule.passed);
-  const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
+  const passwordsMatch = confirmPassword.length === 6 && password === confirmPassword;
   const canSubmit = allRulesPassed && passwordsMatch;
 
   const handlePasswordChange = (text) => {
-    const cleaned = text.replace(/[^0-9]/g, '');
-    setPasswordState(cleaned);
+    setPasswordState(text);
     if (validationError) {
       setValidationError('');
       setInvalidField(null);
@@ -43,8 +42,7 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
   };
 
   const handleConfirmPasswordChange = (text) => {
-    const cleaned = text.replace(/[^0-9]/g, '');
-    setConfirmPassword(cleaned);
+    setConfirmPassword(text);
     if (validationError) {
       setValidationError('');
       setInvalidField(null);
@@ -57,8 +55,8 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
       setInvalidField('password');
       return;
     }
-    if (!confirmPassword.trim()) {
-      setValidationError('Please re-enter your 6-digit PIN.');
+    if (confirmPassword.length < 6) {
+      setValidationError('Please complete re-entering your 6-digit PIN.');
       setInvalidField('confirmPassword');
       return;
     }
@@ -85,69 +83,50 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />
       <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets>
-        <View style={styles.content}>
-          <EcoSavesLogo variant="badge" />
+        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets>
+          <View style={styles.content}>
+            <EcoSavesLogo variant="badge" />
 
-          <Text style={styles.title}>Create Security PIN</Text>
-          <Text style={styles.subtitle}>Set a 6-digit PIN to secure your account</Text>
+            <Text style={styles.title}>Create Security PIN</Text>
+            <Text style={styles.subtitle}>Set a 6-digit passcode PIN to secure your account</Text>
 
-          <View style={styles.form}>
-            <InputField
-              label="6-Digit Security PIN"
-              placeholder="••••••"
-              secureTextEntry
-              keyboardType="number-pad"
-              maxLength={6}
-              value={password}
-              onChangeText={handlePasswordChange}
-              inputStyle={invalidField === 'password' ? styles.inputError : null}
-            />
+            <View style={styles.form}>
+              <Text style={styles.fieldLabel}>New 6-Digit PIN</Text>
+              <PINInput
+                value={password}
+                onChange={handlePasswordChange}
+                length={6}
+                error={invalidField === 'password'}
+                autoFocus={true}
+              />
 
-            {password.length > 0 && (
-              <View style={styles.rulesBox}>
-                {ruleResults.map((rule) => (
-                  <View key={rule.key} style={styles.ruleRow}>
-                    <View style={[styles.ruleDot, rule.passed && styles.ruleDotPassed]}>
-                      {rule.passed ? <Text style={styles.ruleCheckmark}>✓</Text> : null}
-                    </View>
-                    <Text style={[styles.ruleLabel, rule.passed && styles.ruleLabelPassed]}>
-                      {rule.label}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            )}
+              <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Confirm 6-Digit PIN</Text>
+              <PINInput
+                value={confirmPassword}
+                onChange={handleConfirmPasswordChange}
+                length={6}
+                error={invalidField === 'confirmPassword'}
+                autoFocus={false}
+              />
 
-            <InputField
-              label="Re-enter Security PIN"
-              placeholder="••••••"
-              secureTextEntry
-              keyboardType="number-pad"
-              maxLength={6}
-              value={confirmPassword}
-              onChangeText={handleConfirmPasswordChange}
-              inputStyle={invalidField === 'confirmPassword' ? styles.inputError : null}
-            />
+              {confirmPassword.length === 6 && !passwordsMatch ? (
+                <Text style={styles.mismatchText}>PINs do not match</Text>
+              ) : null}
+            </View>
 
-            {confirmPassword.length > 0 && !passwordsMatch ? (
-              <Text style={styles.mismatchText}>PINs do not match</Text>
-            ) : null}
+            {displayedError ? <Text style={styles.errorText}>{displayedError}</Text> : null}
           </View>
 
-          {displayedError ? <Text style={styles.errorText}>{displayedError}</Text> : null}
-        </View>
-
-        <View style={styles.footer}>
-          <Button
-            title="Complete Registration"
-            loading={isLoading}
-            disabled={!canSubmit}
-            style={[styles.primaryButton, !canSubmit && styles.primaryButtonDisabled]}
-            onPress={handleFinish}
-          />
-        </View>
-      </ScrollView>
+          <View style={styles.footer}>
+            <Button
+              title="Complete Registration"
+              loading={isLoading}
+              disabled={!canSubmit}
+              style={[styles.primaryButton, !canSubmit && styles.primaryButtonDisabled]}
+              onPress={handleFinish}
+            />
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -183,6 +162,12 @@ const styles = StyleSheet.create({
   },
   form: {
     marginTop: 4,
+  },
+  fieldLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2C3E50',
+    marginBottom: 4,
   },
   rulesBox: {
     marginTop: -8,
