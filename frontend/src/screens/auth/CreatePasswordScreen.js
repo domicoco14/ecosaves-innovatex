@@ -6,12 +6,9 @@ import { InputField } from '../../components/InputField';
 import { Button } from '../../components/Button';
 import { useAuthStore } from '../../store/authStore';
 
-const PASSWORD_RULES = [
-  { key: 'length', label: 'At least 8 characters', test: (pw) => pw.length >= 8 },
-  { key: 'uppercase', label: 'One uppercase letter', test: (pw) => /[A-Z]/.test(pw) },
-  { key: 'lowercase', label: 'One lowercase letter', test: (pw) => /[a-z]/.test(pw) },
-  { key: 'number', label: 'One number', test: (pw) => /[0-9]/.test(pw) },
-  { key: 'special', label: 'One special character', test: (pw) => /[^A-Za-z0-9]/.test(pw) },
+const PIN_RULES = [
+  { key: 'length', label: 'Exactly 6 digits', test: (pin) => pin.length === 6 },
+  { key: 'numeric', label: 'Numbers only', test: (pin) => /^[0-9]+$/.test(pin) },
 ];
 
 export const CreatePasswordScreen = ({ route, navigation }) => {
@@ -29,7 +26,7 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
   const clearError = useAuthStore((state) => state.clearError);
 
   const ruleResults = useMemo(
-    () => PASSWORD_RULES.map((rule) => ({ ...rule, passed: rule.test(password) })),
+    () => PIN_RULES.map((rule) => ({ ...rule, passed: rule.test(password) })),
     [password]
   );
   const allRulesPassed = ruleResults.every((rule) => rule.passed);
@@ -37,7 +34,8 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
   const canSubmit = allRulesPassed && passwordsMatch;
 
   const handlePasswordChange = (text) => {
-    setPasswordState(text);
+    const cleaned = text.replace(/[^0-9]/g, '');
+    setPasswordState(cleaned);
     if (validationError) {
       setValidationError('');
       setInvalidField(null);
@@ -45,7 +43,8 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
   };
 
   const handleConfirmPasswordChange = (text) => {
-    setConfirmPassword(text);
+    const cleaned = text.replace(/[^0-9]/g, '');
+    setConfirmPassword(cleaned);
     if (validationError) {
       setValidationError('');
       setInvalidField(null);
@@ -54,17 +53,17 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
 
   const handleFinish = async () => {
     if (!allRulesPassed) {
-      setValidationError('Please meet all password requirements.');
+      setValidationError('Please enter a valid 6-digit security PIN.');
       setInvalidField('password');
       return;
     }
     if (!confirmPassword.trim()) {
-      setValidationError('Please re-enter your password.');
+      setValidationError('Please re-enter your 6-digit PIN.');
       setInvalidField('confirmPassword');
       return;
     }
     if (!passwordsMatch) {
-      setValidationError('Passwords do not match.');
+      setValidationError('PINs do not match.');
       setInvalidField('confirmPassword');
       return;
     }
@@ -78,8 +77,6 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
     } catch (err) {
       return; // backendError is already set in the store, stay on screen
     }
-
-    // RootNavigator switches to the authenticated app after signup completes.
   };
 
   const displayedError = validationError || backendError;
@@ -92,14 +89,16 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
         <View style={styles.content}>
           <EcoSavesLogo variant="badge" />
 
-          <Text style={styles.title}>Create Password</Text>
-          <Text style={styles.subtitle}>Create your password</Text>
+          <Text style={styles.title}>Create Security PIN</Text>
+          <Text style={styles.subtitle}>Set a 6-digit PIN to secure your account</Text>
 
           <View style={styles.form}>
             <InputField
-              label="Password"
-              placeholder="XXXXXXXX"
+              label="6-Digit Security PIN"
+              placeholder="••••••"
               secureTextEntry
+              keyboardType="number-pad"
+              maxLength={6}
               value={password}
               onChangeText={handlePasswordChange}
               inputStyle={invalidField === 'password' ? styles.inputError : null}
@@ -121,16 +120,18 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
             )}
 
             <InputField
-              label="Re-enter Password"
-              placeholder="XXXXXXXX"
+              label="Re-enter Security PIN"
+              placeholder="••••••"
               secureTextEntry
+              keyboardType="number-pad"
+              maxLength={6}
               value={confirmPassword}
               onChangeText={handleConfirmPasswordChange}
               inputStyle={invalidField === 'confirmPassword' ? styles.inputError : null}
             />
 
             {confirmPassword.length > 0 && !passwordsMatch ? (
-              <Text style={styles.mismatchText}>Passwords do not match</Text>
+              <Text style={styles.mismatchText}>PINs do not match</Text>
             ) : null}
           </View>
 
@@ -139,7 +140,7 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
 
         <View style={styles.footer}>
           <Button
-            title="Get Started"
+            title="Complete Registration"
             loading={isLoading}
             disabled={!canSubmit}
             style={[styles.primaryButton, !canSubmit && styles.primaryButtonDisabled]}

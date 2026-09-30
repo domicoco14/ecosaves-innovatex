@@ -104,8 +104,8 @@ export const LoginScreen = ({ navigation }) => {
             />
 
             <InputField
-              label="Password"
-              placeholder="••••••••"
+              label="6-Digit Security PIN / Password"
+              placeholder="••••••"
               secureTextEntry
               value={password}
               onChangeText={handlePasswordChange}
@@ -113,7 +113,7 @@ export const LoginScreen = ({ navigation }) => {
             />
 
             <TouchableOpacity style={styles.forgotWrapper}>
-              <Text style={styles.forgotText}>Forgot Password?</Text>
+              <Text style={styles.forgotText}>Forgot PIN / Password?</Text>
             </TouchableOpacity>
           </View>
 

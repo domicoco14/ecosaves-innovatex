@@ -40,7 +40,7 @@ export const AuthStack = () => {
       <Stack.Screen
         name="CreatePassword"
         component={CreatePasswordScreen}
-        options={{ title: 'Create Password' }}
+        options={{ title: 'Create Security PIN' }}
       />
       <Stack.Screen
         name="Login"
