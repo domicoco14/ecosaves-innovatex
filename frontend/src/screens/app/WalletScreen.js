@@ -285,10 +285,15 @@ export const WalletScreen = ({ navigation }) => {
         <Button title="+ Create a savings plan" onPress={() => setShowCreate(true)} style={styles.primaryButton} />
       </ScrollView>
 
-      <Modal visible={showCreate} transparent animationType="slide" onRequestClose={() => setShowCreate(false)}>
+      <Modal visible={showCreate} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setShowCreate(false)}>
         <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScrollView contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+          <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <ScrollView
+            contentContainerStyle={styles.modalScroll}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            automaticallyAdjustKeyboardInsets
+          >
             <View style={styles.modalCard}>
               <Text style={styles.modalTitle}>Create a plan</Text>
               <Text style={styles.modalSubtitle}>This creates a tracking plan only; it does not move or lock funds.</Text>
@@ -322,10 +327,15 @@ export const WalletScreen = ({ navigation }) => {
         </View>
       </Modal>
 
-      <Modal visible={Boolean(entryPlan)} transparent animationType="slide" onRequestClose={() => setEntryPlan(null)}>
+      <Modal visible={Boolean(entryPlan)} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setEntryPlan(null)}>
         <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScrollView contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+          <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <ScrollView
+            contentContainerStyle={styles.modalScroll}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            automaticallyAdjustKeyboardInsets
+          >
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Log a saving</Text>
             <Text style={styles.modalSubtitle}>
@@ -402,9 +412,9 @@ const styles = StyleSheet.create({
   recordButtonText: { color: '#005B7F', fontSize: 13, fontWeight: '800' },
   primaryButton: { backgroundColor: '#005B7F', borderRadius: 16, height: 52, marginTop: 12 },
   secondaryButton: { backgroundColor: '#005B7F', borderRadius: 14, height: 46 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 20, 30, 0.58)', justifyContent: 'center', paddingHorizontal: 18 },
-  keyboardFrame: { flex: 1, justifyContent: 'center' },
-  modalScroll: { flexGrow: 1, justifyContent: 'center', paddingVertical: 24 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 20, 30, 0.58)' },
+  keyboardFrame: { flex: 1 },
+  modalScroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 18, paddingVertical: 40 },
   modalCard: { backgroundColor: '#FFFFFF', borderRadius: 22, padding: 20 },
   modalTitle: { color: '#161C20', fontSize: 20, fontWeight: '800' },
   modalSubtitle: { color: '#737980', fontSize: 12, lineHeight: 17, marginTop: 5, marginBottom: 16 },

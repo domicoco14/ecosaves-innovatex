@@ -87,7 +87,7 @@ export const CreateGroupStep2Screen = ({ route, navigation }) => {
         <Text style={styles.stepTitle}>Payout Schedule</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets>
         {/* Info Callout Card */}
         <View style={styles.infoCard}>
           <Text style={styles.infoIcon}>ℹ️</Text>

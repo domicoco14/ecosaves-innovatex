@@ -39,7 +39,7 @@ export const CreateGroupStep1Screen = ({ navigation }) => {
         <Text style={styles.stepTitle}>Group Setup</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets>
         <InputField
           label="GROUP NAME *"
           placeholder="Yaba Traders Ajo"
