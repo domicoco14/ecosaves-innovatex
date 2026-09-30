@@ -84,7 +84,7 @@ export const CreateGroupStep1Screen = ({ navigation }) => {
         <View style={styles.stepperContainer}>
           <TouchableOpacity
             style={styles.stepperBtn}
-            onPress={() => setMembersCount((prev) => Math.max(3, prev - 1))}
+            onPress={() => setMembersCount((prev) => Math.max(2, prev - 1))}
           >
             <Text style={styles.stepperBtnText}>-</Text>
           </TouchableOpacity>
@@ -100,7 +100,7 @@ export const CreateGroupStep1Screen = ({ navigation }) => {
         </View>
 
         <Text style={styles.stepperHint}>
-          Ajo rotation typically operates best between 3 to 12 members.
+          Ajo rotation typically operates best between 2 to 12 members.
         </Text>
 
         <Button

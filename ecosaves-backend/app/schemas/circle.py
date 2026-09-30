@@ -9,7 +9,7 @@ class CircleCreate(BaseModel):
     name: str = Field(min_length=2, max_length=80)
     contribution_amount: Decimal = Field(gt=0, max_digits=14, decimal_places=2)
     frequency: Literal["weekly", "bi-weekly", "monthly"]
-    member_limit: int = Field(ge=3, le=30)
+    member_limit: int = Field(ge=2, le=30)
     start_date: date
 
     @field_validator("name")
