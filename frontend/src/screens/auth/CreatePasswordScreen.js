@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FA',
     paddingHorizontal: 24,
     paddingTop: 20,
-    paddingBottom: 28,
+    paddingBottom: 140,
     justifyContent: 'space-between',
   },
   content: {

@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 20,
     paddingTop: 28,
-    paddingBottom: 36,
+    paddingBottom: 140,
   },
   title: {
     color: '#161C20',

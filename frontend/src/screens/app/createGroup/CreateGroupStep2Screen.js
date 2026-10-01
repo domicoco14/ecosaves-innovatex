@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 32,
+    paddingBottom: 140,
   },
   infoCard: {
     flexDirection: 'row',
