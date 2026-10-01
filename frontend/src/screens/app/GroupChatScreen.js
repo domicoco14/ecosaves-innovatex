@@ -2,8 +2,6 @@ import React, { useCallback, useRef, useState } from 'react';
 import {
   Alert,
   FlatList,
-  KeyboardAvoidingView,
-  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -14,6 +12,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/authStore';
 import { api } from '../../lib/api';
+import { KeyboardAwareView } from '../../components/KeyboardAwareView';
 
 const formatTime = (value) => new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -74,7 +73,7 @@ export const GroupChatScreen = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAwareView>
         <View style={styles.chatHeader}>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Text style={styles.backText}>‹</Text>
@@ -101,6 +100,7 @@ export const GroupChatScreen = ({ route, navigation }) => {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.messageList}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
             onScroll={(event) => {
               const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
               nearBottomRef.current = contentSize.height - (contentOffset.y + layoutMeasurement.height) < 100;
@@ -154,14 +154,13 @@ export const GroupChatScreen = ({ route, navigation }) => {
             <Text style={styles.sendIcon}>{sending ? '…' : '➤'}</Text>
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardAwareView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   safeArea: { backgroundColor: '#F6F9F9', flex: 1 },
-  keyboardFrame: { flex: 1 },
   chatHeader: { alignItems: 'center', backgroundColor: '#FFFFFF', borderBottomColor: '#E9EEF0', borderBottomWidth: 1, flexDirection: 'row', minHeight: 66, paddingHorizontal: 14 },
   backButton: { alignItems: 'center', height: 42, justifyContent: 'center', width: 34 },
   backText: { color: '#005B7F', fontSize: 34, lineHeight: 38 },

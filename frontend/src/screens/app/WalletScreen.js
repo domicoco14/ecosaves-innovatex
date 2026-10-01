@@ -2,14 +2,11 @@ import React, { useCallback, useRef, useState } from 'react';
 import {
   Alert,
   Modal,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +14,8 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { ProgressBar } from '../../components/ProgressBar';
 import { StatusBadge } from '../../components/StatusBadge';
+import { KeyboardAwareScrollView } from '../../components/KeyboardAwareScrollView';
+import { KeyboardAwareView } from '../../components/KeyboardAwareView';
 import { api } from '../../lib/api';
 
 const todayIso = () => {
@@ -151,7 +150,7 @@ export const WalletScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View>
             <Text style={styles.title}>EcoSaves Wallet</Text>
@@ -283,16 +282,13 @@ export const WalletScreen = ({ navigation }) => {
         ))}
 
         <Button title="+ Create a savings plan" onPress={() => setShowCreate(true)} style={styles.primaryButton} />
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       <Modal visible={showCreate} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setShowCreate(false)}>
         <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <ScrollView
+          <KeyboardAwareView style={styles.keyboardFrame} androidBehavior="height">
+          <KeyboardAwareScrollView
             contentContainerStyle={styles.modalScroll}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            automaticallyAdjustKeyboardInsets
           >
             <View style={styles.modalCard}>
               <Text style={styles.modalTitle}>Create a plan</Text>
@@ -322,19 +318,16 @@ export const WalletScreen = ({ navigation }) => {
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
             </View>
-          </ScrollView>
-          </KeyboardAvoidingView>
+          </KeyboardAwareScrollView>
+          </KeyboardAwareView>
         </View>
       </Modal>
 
       <Modal visible={Boolean(entryPlan)} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setEntryPlan(null)}>
         <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <ScrollView
+          <KeyboardAwareView style={styles.keyboardFrame} androidBehavior="height">
+          <KeyboardAwareScrollView
             contentContainerStyle={styles.modalScroll}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            automaticallyAdjustKeyboardInsets
           >
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Log a saving</Text>
@@ -348,8 +341,8 @@ export const WalletScreen = ({ navigation }) => {
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
-          </ScrollView>
-          </KeyboardAvoidingView>
+          </KeyboardAwareScrollView>
+          </KeyboardAwareView>
         </View>
       </Modal>
     </SafeAreaView>
@@ -362,7 +355,6 @@ const styles = StyleSheet.create({
   header: { marginBottom: 18 },
   title: { color: '#161C20', fontSize: 24, fontWeight: '800' },
   subtitle: { color: '#737980', fontSize: 13, marginTop: 4 },
-  totalAmount: { color: '#005B7F', fontSize: 22, fontWeight: '800', marginTop: 12 },
   walletHeroCard: { backgroundColor: '#005B7F', borderRadius: 20, marginBottom: 22, padding: 20 },
   walletLabel: { color: '#D9F1FB', fontSize: 13, fontWeight: '600' },
   walletAmount: { color: '#FFFFFF', fontSize: 30, fontWeight: '800', marginVertical: 13 },
@@ -413,7 +405,6 @@ const styles = StyleSheet.create({
   primaryButton: { backgroundColor: '#005B7F', borderRadius: 16, height: 52, marginTop: 12 },
   secondaryButton: { backgroundColor: '#005B7F', borderRadius: 14, height: 46 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 20, 30, 0.58)' },
-  keyboardFrame: { flex: 1 },
   modalScroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 18, paddingVertical: 40 },
   modalCard: { backgroundColor: '#FFFFFF', borderRadius: 22, padding: 20 },
   modalTitle: { color: '#161C20', fontSize: 20, fontWeight: '800' },

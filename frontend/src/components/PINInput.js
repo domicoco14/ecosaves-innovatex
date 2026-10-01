@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
 
 export const PINInput = ({
@@ -10,6 +10,7 @@ export const PINInput = ({
   autoFocus = true,
 }) => {
   const inputRef = useRef(null);
+  const [isFocused, setIsFocused] = useState(false);
 
   const handlePress = () => {
     inputRef.current?.focus();
@@ -32,12 +33,16 @@ export const PINInput = ({
           autoFocus={autoFocus}
           style={styles.hiddenInput}
           caretHidden
+          accessibilityLabel={`${length}-digit passcode`}
+          accessibilityHint="Enter your passcode"
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
         />
 
         <View style={styles.boxesRow}>
           {Array.from({ length }).map((_, index) => {
             const isFilled = index < digits.length;
-            const isFocused = index === digits.length || (index === length - 1 && digits.length === length);
+            const isActive = isFocused && (index === digits.length || (index === length - 1 && digits.length === length));
             const char = digits[index];
 
             return (
@@ -46,7 +51,7 @@ export const PINInput = ({
                 style={[
                   styles.box,
                   isFilled && styles.boxFilled,
-                  isFocused && styles.boxFocused,
+                  isActive && styles.boxFocused,
                   error && styles.boxError,
                 ]}
               >
@@ -67,7 +72,8 @@ export const PINInput = ({
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    marginVertical: 14,
+    marginTop: 8,
+    marginBottom: 10,
     width: '100%',
   },
   hiddenInput: {
@@ -83,28 +89,29 @@ const styles = StyleSheet.create({
   },
   box: {
     alignItems: 'center',
-    backgroundColor: '#F0F3F5',
-    borderColor: '#E2E7EB',
-    borderRadius: 14,
-    borderWidth: 1.5,
-    height: 52,
+    backgroundColor: '#FFFFFF',
+    borderColor: '#DDE5E8',
+    borderRadius: 12,
+    borderWidth: 1,
+    flex: 1,
+    height: 54,
     justifyContent: 'center',
-    marginHorizontal: 5,
-    width: 46,
+    marginHorizontal: 4,
+    maxWidth: 50,
   },
   boxFilled: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#005B7F',
+    backgroundColor: '#EAF4F6',
+    borderColor: '#A8C7D0',
   },
   boxFocused: {
     backgroundColor: '#FFFFFF',
-    borderColor: '#005B7F',
-    borderWidth: 2,
+    borderColor: '#00597C',
+    borderWidth: 1.7,
     shadowColor: '#005B7F',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 1,
   },
   boxError: {
     backgroundColor: '#FEE9E9',

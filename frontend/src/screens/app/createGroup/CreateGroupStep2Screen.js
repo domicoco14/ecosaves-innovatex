@@ -1,9 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { InputField } from '../../../components/InputField';
 import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
+import { KeyboardAwareScrollView } from '../../../components/KeyboardAwareScrollView';
+import { KeyboardAwareView } from '../../../components/KeyboardAwareView';
 
 export const CreateGroupStep2Screen = ({ route, navigation }) => {
   const step1Data = route.params || {};
@@ -75,7 +77,7 @@ export const CreateGroupStep2Screen = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAwareView>
       {/* Deep Teal Step Header */}
       <View style={styles.stepHeader}>
         <View style={styles.stepHeaderTop}>
@@ -87,7 +89,7 @@ export const CreateGroupStep2Screen = ({ route, navigation }) => {
         <Text style={styles.stepTitle}>Payout Schedule</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets>
+      <KeyboardAwareScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         {/* Info Callout Card */}
         <View style={styles.infoCard}>
           <Text style={styles.infoIcon}>ℹ️</Text>
@@ -142,8 +144,8 @@ export const CreateGroupStep2Screen = ({ route, navigation }) => {
           onPress={handleNext}
           style={styles.nextBtn}
         />
-      </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+      </KeyboardAwareView>
     </SafeAreaView>
   );
 };
@@ -153,7 +155,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F6F9F9',
   },
-  keyboardFrame: { flex: 1 },
   stepHeader: {
     backgroundColor: '#005B7F',
     paddingHorizontal: 20,

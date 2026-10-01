@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View, KeyboardAvoidingView, Platform } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { InputField } from '../../components/InputField';
+import { KeyboardAwareScrollView } from '../../components/KeyboardAwareScrollView';
+import { KeyboardAwareView } from '../../components/KeyboardAwareView';
 import { api } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 
@@ -102,8 +104,8 @@ export const JoinCircleScreen = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets>
+      <KeyboardAwareView>
+      <KeyboardAwareScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Join a circle</Text>
         <Text style={styles.subtitle}>Open a shared EcoSaves invite link or enter the invitation code from the circle creator.</Text>
 
@@ -149,8 +151,8 @@ export const JoinCircleScreen = ({ route, navigation }) => {
           )}
           {previewError ? <Text style={styles.errorText}>{previewError}</Text> : null}
         </Card>
-      </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+      </KeyboardAwareView>
     </SafeAreaView>
   );
 };
@@ -160,7 +162,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F6F9F9',
   },
-  keyboardFrame: { flex: 1 },
   container: {
     flexGrow: 1,
     paddingHorizontal: 20,

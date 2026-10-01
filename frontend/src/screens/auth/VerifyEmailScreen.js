@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, StatusBar, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EcoSavesLogo } from '../../components/EcoSavesLogo';
 import { OTPInput } from '../../components/OTPInput';
 import { Button } from '../../components/Button';
+import { KeyboardAwareScrollView } from '../../components/KeyboardAwareScrollView';
+import { KeyboardAwareView } from '../../components/KeyboardAwareView';
 import { useAuthStore } from '../../store/authStore';
 
 export const VerifyEmailScreen = ({ route, navigation }) => {
@@ -72,8 +74,8 @@ export const VerifyEmailScreen = ({ route, navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />
-      <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+      <KeyboardAwareView>
+      <KeyboardAwareScrollView contentContainerStyle={styles.container}>
         <View style={styles.content}>
           <EcoSavesLogo variant="badge" />
 
@@ -109,8 +111,8 @@ export const VerifyEmailScreen = ({ route, navigation }) => {
             onPress={handleVerify}
           />
         </View>
-      </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+      </KeyboardAwareView>
     </SafeAreaView>
   );
 };
@@ -120,7 +122,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F9FA',
   },
-  keyboardFrame: { flex: 1 },
   container: {
     flexGrow: 1,
     backgroundColor: '#F8F9FA',

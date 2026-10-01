@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, StatusBar, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EcoSavesLogo } from '../../components/EcoSavesLogo';
 import { PINInput } from '../../components/PINInput';
 import { Button } from '../../components/Button';
+import { KeyboardAwareScrollView } from '../../components/KeyboardAwareScrollView';
+import { KeyboardAwareView } from '../../components/KeyboardAwareView';
 import { useAuthStore } from '../../store/authStore';
 
 const PIN_RULES = [
@@ -82,8 +84,8 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />
-      <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets>
+      <KeyboardAwareView>
+        <KeyboardAwareScrollView contentContainerStyle={styles.container}>
           <View style={styles.content}>
             <EcoSavesLogo variant="badge" />
 
@@ -126,8 +128,8 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
               onPress={handleFinish}
             />
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAwareScrollView>
+      </KeyboardAwareView>
     </SafeAreaView>
   );
 };
@@ -137,7 +139,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F9FA',
   },
-  keyboardFrame: { flex: 1 },
   container: {
     flexGrow: 1,
     backgroundColor: '#F8F9FA',

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Share, KeyboardAvoidingView, Platform, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Share, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
+import { KeyboardAwareScrollView } from '../../../components/KeyboardAwareScrollView';
+import { KeyboardAwareView } from '../../../components/KeyboardAwareView';
 import { api } from '../../../lib/api';
 import * as Clipboard from 'expo-clipboard';
 
@@ -87,7 +89,7 @@ export const CreateGroupStep3Screen = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAwareView>
       {/* Deep Teal Step Header */}
       <View style={styles.stepHeader}>
         <View style={styles.stepHeaderTop}>
@@ -99,7 +101,7 @@ export const CreateGroupStep3Screen = ({ route, navigation }) => {
         <Text style={styles.stepTitle}>Review Group</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+      <KeyboardAwareScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         {/* GROUP DETAILS SUMMARY CARD */}
         <Text style={styles.sectionLabel}>GROUP DETAILS SUMMARY</Text>
         <Card style={styles.summaryCard}>
@@ -162,8 +164,8 @@ export const CreateGroupStep3Screen = ({ route, navigation }) => {
           onPress={handleConfirm}
           style={styles.createBtn}
         />
-      </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+      </KeyboardAwareView>
     </SafeAreaView>
   );
 };
@@ -173,7 +175,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F6F9F9',
   },
-  keyboardFrame: { flex: 1 },
   stepHeader: {
     backgroundColor: '#005B7F',
     paddingHorizontal: 20,
