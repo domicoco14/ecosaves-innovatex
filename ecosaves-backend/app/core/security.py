@@ -19,6 +19,14 @@ def verify_password(password: str, password_hash: str) -> bool:
     return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
 
 
+def hash_pin(pin: str) -> str:
+    return hash_password(pin)
+
+
+def verify_pin(pin: str, pin_hash: str) -> bool:
+    return verify_password(pin, pin_hash)
+
+
 def create_access_token(user_id: str, email: str) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {"sub": user_id, "email": email, "exp": expire}

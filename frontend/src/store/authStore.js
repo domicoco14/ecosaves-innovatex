@@ -78,7 +78,7 @@ export const useAuthStore = create(
        * Complete Signup action — calls FastAPI POST /users/complete-signup
        * Creates the account, stores the JWT, and logs the user in immediately.
        */
-      completeSignup: async (firstName, lastName, email, password) => {
+      completeSignup: async (firstName, lastName, email, pin) => {
         set({ isLoading: true, error: null });
         const verificationToken = get().verificationToken;
 
@@ -93,7 +93,7 @@ export const useAuthStore = create(
             first_name: firstName,
             last_name: lastName,
             email,
-            password,
+            pin,
             verification_token: verificationToken,
           });
 
@@ -127,12 +127,12 @@ export const useAuthStore = create(
        * Login user action — calls FastAPI POST /users/login,
        * stores JWT in SecureStore, fetches profile via GET /users/me
        */
-      loginApi: async (email, password) => {
+      loginApi: async (email, pin) => {
         set({ isLoading: true, error: null });
         try {
           const response = await api.post('/users/login', {
             email,
-            password,
+            pin,
           });
           const { access_token } = response.data;
 

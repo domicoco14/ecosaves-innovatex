@@ -13,7 +13,7 @@ from app.schemas.auth import (
 )
 from app.db.supabase_client import get_supabase
 from app.core.security import (
-    hash_password, verify_password, create_access_token, get_current_user_id,
+    hash_pin, verify_pin, create_access_token, get_current_user_id,
     create_email_verification_token, verify_email_verification_token,
 )
 from app.services.otp_service import create_and_send_otp, verify_otp, OtpRateLimitExceeded
@@ -74,13 +74,13 @@ def complete_signup(payload: CompleteSignupRequest):
     if existing.data:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    password_hash = hash_password(payload.password)
+    pin_hash = hash_pin(payload.pin)
 
     result = supabase.table("users").insert({
         "first_name": payload.first_name,
         "last_name": payload.last_name,
         "email": payload.email,
-        "password_hash": password_hash,
+        "pin_hash": pin_hash,
         "email_verified": True,
     }).execute()
 
@@ -95,11 +95,12 @@ def login(payload: LoginRequest):
     supabase = get_supabase()
     user = supabase.table("users").select("*").eq("email", payload.email).is_("deleted_at", "null").execute()
 
-    if not user.data or not user.data[0]["password_hash"]:
+    if not user.data:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     user_row = user.data[0]
-    if not verify_password(payload.password, user_row["password_hash"]):
+    pin_hash = user_row.get("pin_hash") or user_row.get("password_hash")
+    if not pin_hash or not verify_pin(payload.pin, pin_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     token = create_access_token(user_id=user_row["id"], email=user_row["email"])

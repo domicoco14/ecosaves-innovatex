@@ -17,10 +17,10 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
   const email = route.params?.email || 'johndoe@gmail.com';
   const firstName = route.params?.firstName || '';
   const lastName = route.params?.lastName || '';
-  const [password, setPasswordState] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pin, setPinState] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
   const [validationError, setValidationError] = useState('');
-  const [invalidField, setInvalidField] = useState(null); // 'password' | 'confirmPassword' | null
+  const [invalidField, setInvalidField] = useState(null); // 'pin' | 'confirmPin' | null
 
   const completeSignup = useAuthStore((state) => state.completeSignup);
   const isLoading = useAuthStore((state) => state.isLoading);
@@ -28,23 +28,23 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
   const clearError = useAuthStore((state) => state.clearError);
 
   const ruleResults = useMemo(
-    () => PIN_RULES.map((rule) => ({ ...rule, passed: rule.test(password) })),
-    [password]
+    () => PIN_RULES.map((rule) => ({ ...rule, passed: rule.test(pin) })),
+    [pin]
   );
   const allRulesPassed = ruleResults.every((rule) => rule.passed);
-  const passwordsMatch = confirmPassword.length === 6 && password === confirmPassword;
-  const canSubmit = allRulesPassed && passwordsMatch;
+  const pinsMatch = confirmPin.length === 6 && pin === confirmPin;
+  const canSubmit = allRulesPassed && pinsMatch;
 
-  const handlePasswordChange = (text) => {
-    setPasswordState(text);
+  const handlePinChange = (text) => {
+    setPinState(text);
     if (validationError) {
       setValidationError('');
       setInvalidField(null);
     }
   };
 
-  const handleConfirmPasswordChange = (text) => {
-    setConfirmPassword(text);
+  const handleConfirmPinChange = (text) => {
+    setConfirmPin(text);
     if (validationError) {
       setValidationError('');
       setInvalidField(null);
@@ -54,17 +54,17 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
   const handleFinish = async () => {
     if (!allRulesPassed) {
       setValidationError('Please enter a valid 6-digit security PIN.');
-      setInvalidField('password');
+      setInvalidField('pin');
       return;
     }
-    if (confirmPassword.length < 6) {
+    if (confirmPin.length < 6) {
       setValidationError('Please complete re-entering your 6-digit PIN.');
-      setInvalidField('confirmPassword');
+      setInvalidField('confirmPin');
       return;
     }
-    if (!passwordsMatch) {
+    if (!pinsMatch) {
       setValidationError('PINs do not match.');
-      setInvalidField('confirmPassword');
+      setInvalidField('confirmPin');
       return;
     }
 
@@ -73,7 +73,7 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
     clearError();
 
     try {
-      await completeSignup(firstName, lastName, email, password);
+      await completeSignup(firstName, lastName, email, pin);
     } catch (err) {
       return; // backendError is already set in the store, stay on screen
     }
@@ -95,23 +95,23 @@ export const CreatePasswordScreen = ({ route, navigation }) => {
             <View style={styles.form}>
               <Text style={styles.fieldLabel}>New 6-Digit PIN</Text>
               <PINInput
-                value={password}
-                onChange={handlePasswordChange}
+                value={pin}
+                onChange={handlePinChange}
                 length={6}
-                error={invalidField === 'password'}
+                error={invalidField === 'pin'}
                 autoFocus={true}
               />
 
               <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Confirm 6-Digit PIN</Text>
               <PINInput
-                value={confirmPassword}
-                onChange={handleConfirmPasswordChange}
+                value={confirmPin}
+                onChange={handleConfirmPinChange}
                 length={6}
-                error={invalidField === 'confirmPassword'}
+                error={invalidField === 'confirmPin'}
                 autoFocus={false}
               />
 
-              {confirmPassword.length === 6 && !passwordsMatch ? (
+              {confirmPin.length === 6 && !pinsMatch ? (
                 <Text style={styles.mismatchText}>PINs do not match</Text>
               ) : null}
             </View>

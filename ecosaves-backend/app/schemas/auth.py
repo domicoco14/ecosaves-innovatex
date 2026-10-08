@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class RequestOtpRequest(BaseModel):
@@ -21,10 +21,12 @@ class VerifyOtpResponse(BaseModel):
 
 
 class CompleteSignupRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     first_name: str
     last_name: str
     email: EmailStr
-    password: str
+    pin: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")
     verification_token: str
 
 
@@ -43,8 +45,10 @@ class ResendOtpResponse(BaseModel):
 
 
 class LoginRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     email: EmailStr
-    password: str
+    pin: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")
 
 
 class TokenResponse(BaseModel):

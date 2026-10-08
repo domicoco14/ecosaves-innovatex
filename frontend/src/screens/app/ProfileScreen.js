@@ -13,7 +13,7 @@ export const ProfileScreen = () => {
   const fullName = [user?.first_name, user?.last_name].filter(Boolean).join(' ') || 'EcoSaves member';
 
   const confirmLogout = () => {
-    Alert.alert('Sign out?', 'You can sign in again with your email and password.', [
+    Alert.alert('Sign out?', 'You can sign in again with your email and 6-digit PIN.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Sign out',
